@@ -1,7 +1,6 @@
 package authz
 
 import (
-	"log"
 	"net/http"
 	"strings"
 
@@ -12,7 +11,6 @@ const separator = "Bearer "
 
 func ProxiedHTTPClient(r *http.Request) *http.Client {
 	_, token, found := strings.Cut(r.Header.Get("authorization"), separator)
-	log.Printf("token=%q found=%v", token, found)
 	if !found {
 		return http.DefaultClient
 	}
