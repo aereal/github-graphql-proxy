@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"sync/atomic"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
@@ -35,6 +36,7 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	OrganizationBilling() OrganizationBillingResolver
 	Query() QueryResolver
 }
 
@@ -42,8 +44,39 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	ActionBilling struct {
+		IncludedMinutes      func(childComplexity int) int
+		MinutedUsedBreakdown func(childComplexity int) int
+		TotalMinutesUsed     func(childComplexity int) int
+		TotalPaidMinutesUsed func(childComplexity int) int
+	}
+
+	ActionBillingBreakdown struct {
+		MacOs   func(childComplexity int) int
+		Total   func(childComplexity int) int
+		Ubuntu  func(childComplexity int) int
+		Windows func(childComplexity int) int
+	}
+
+	ActionBillingBreakdownMacOS struct {
+		Total func(childComplexity int) int
+	}
+
+	ActionBillingBreakdownUbuntu struct {
+		Total func(childComplexity int) int
+	}
+
+	ActionBillingBreakdownWindows struct {
+		Total func(childComplexity int) int
+	}
+
 	Organization struct {
-		Login func(childComplexity int) int
+		Billing func(childComplexity int) int
+		Login   func(childComplexity int) int
+	}
+
+	OrganizationBilling struct {
+		Actions func(childComplexity int) int
 	}
 
 	Query struct {
@@ -51,6 +84,9 @@ type ComplexityRoot struct {
 	}
 }
 
+type OrganizationBillingResolver interface {
+	Actions(ctx context.Context, obj *dto.OrganizationBilling) (*dto.ActionBilling, error)
+}
 type QueryResolver interface {
 	Organization(ctx context.Context, login string) (*dto.Organization, error)
 }
@@ -70,12 +106,103 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	_ = ec
 	switch typeName + "." + field {
 
+	case "ActionBilling.includedMinutes":
+		if e.complexity.ActionBilling.IncludedMinutes == nil {
+			break
+		}
+
+		return e.complexity.ActionBilling.IncludedMinutes(childComplexity), true
+
+	case "ActionBilling.minutedUsedBreakdown":
+		if e.complexity.ActionBilling.MinutedUsedBreakdown == nil {
+			break
+		}
+
+		return e.complexity.ActionBilling.MinutedUsedBreakdown(childComplexity), true
+
+	case "ActionBilling.totalMinutesUsed":
+		if e.complexity.ActionBilling.TotalMinutesUsed == nil {
+			break
+		}
+
+		return e.complexity.ActionBilling.TotalMinutesUsed(childComplexity), true
+
+	case "ActionBilling.totalPaidMinutesUsed":
+		if e.complexity.ActionBilling.TotalPaidMinutesUsed == nil {
+			break
+		}
+
+		return e.complexity.ActionBilling.TotalPaidMinutesUsed(childComplexity), true
+
+	case "ActionBillingBreakdown.macOS":
+		if e.complexity.ActionBillingBreakdown.MacOs == nil {
+			break
+		}
+
+		return e.complexity.ActionBillingBreakdown.MacOs(childComplexity), true
+
+	case "ActionBillingBreakdown.total":
+		if e.complexity.ActionBillingBreakdown.Total == nil {
+			break
+		}
+
+		return e.complexity.ActionBillingBreakdown.Total(childComplexity), true
+
+	case "ActionBillingBreakdown.ubuntu":
+		if e.complexity.ActionBillingBreakdown.Ubuntu == nil {
+			break
+		}
+
+		return e.complexity.ActionBillingBreakdown.Ubuntu(childComplexity), true
+
+	case "ActionBillingBreakdown.windows":
+		if e.complexity.ActionBillingBreakdown.Windows == nil {
+			break
+		}
+
+		return e.complexity.ActionBillingBreakdown.Windows(childComplexity), true
+
+	case "ActionBillingBreakdownMacOS.total":
+		if e.complexity.ActionBillingBreakdownMacOS.Total == nil {
+			break
+		}
+
+		return e.complexity.ActionBillingBreakdownMacOS.Total(childComplexity), true
+
+	case "ActionBillingBreakdownUbuntu.total":
+		if e.complexity.ActionBillingBreakdownUbuntu.Total == nil {
+			break
+		}
+
+		return e.complexity.ActionBillingBreakdownUbuntu.Total(childComplexity), true
+
+	case "ActionBillingBreakdownWindows.total":
+		if e.complexity.ActionBillingBreakdownWindows.Total == nil {
+			break
+		}
+
+		return e.complexity.ActionBillingBreakdownWindows.Total(childComplexity), true
+
+	case "Organization.billing":
+		if e.complexity.Organization.Billing == nil {
+			break
+		}
+
+		return e.complexity.Organization.Billing(childComplexity), true
+
 	case "Organization.login":
 		if e.complexity.Organization.Login == nil {
 			break
 		}
 
 		return e.complexity.Organization.Login(childComplexity), true
+
+	case "OrganizationBilling.actions":
+		if e.complexity.OrganizationBilling.Actions == nil {
+			break
+		}
+
+		return e.complexity.OrganizationBilling.Actions(childComplexity), true
 
 	case "Query.organization":
 		if e.complexity.Query.Organization == nil {
@@ -143,6 +270,37 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 var sources = []*ast.Source{
 	{Name: "../../schema.gql", Input: `type Organization {
   login: String!
+  billing: OrganizationBilling!
+}
+
+type OrganizationBilling {
+  actions: ActionBilling!
+}
+
+type ActionBilling {
+  totalMinutesUsed: Int!
+  totalPaidMinutesUsed: Float!
+  includedMinutes: Int!
+  minutedUsedBreakdown: ActionBillingBreakdown!
+}
+
+type ActionBillingBreakdown {
+  total: Int
+  macOS: ActionBillingBreakdownMacOS
+  windows: ActionBillingBreakdownWindows
+  ubuntu: ActionBillingBreakdownUbuntu
+}
+
+type ActionBillingBreakdownMacOS {
+  total: Int
+}
+
+type ActionBillingBreakdownWindows {
+  total: Int
+}
+
+type ActionBillingBreakdownUbuntu {
+  total: Int
 }
 
 type Query {
@@ -224,6 +382,491 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
+func (ec *executionContext) _ActionBilling_totalMinutesUsed(ctx context.Context, field graphql.CollectedField, obj *dto.ActionBilling) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ActionBilling_totalMinutesUsed(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalMinutesUsed, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ActionBilling_totalMinutesUsed(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ActionBilling",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ActionBilling_totalPaidMinutesUsed(ctx context.Context, field graphql.CollectedField, obj *dto.ActionBilling) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ActionBilling_totalPaidMinutesUsed(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalPaidMinutesUsed, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ActionBilling_totalPaidMinutesUsed(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ActionBilling",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ActionBilling_includedMinutes(ctx context.Context, field graphql.CollectedField, obj *dto.ActionBilling) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ActionBilling_includedMinutes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.IncludedMinutes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ActionBilling_includedMinutes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ActionBilling",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ActionBilling_minutedUsedBreakdown(ctx context.Context, field graphql.CollectedField, obj *dto.ActionBilling) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ActionBilling_minutedUsedBreakdown(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MinutedUsedBreakdown, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*dto.ActionBillingBreakdown)
+	fc.Result = res
+	return ec.marshalNActionBillingBreakdown2ᚖgithubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐActionBillingBreakdown(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ActionBilling_minutedUsedBreakdown(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ActionBilling",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "total":
+				return ec.fieldContext_ActionBillingBreakdown_total(ctx, field)
+			case "macOS":
+				return ec.fieldContext_ActionBillingBreakdown_macOS(ctx, field)
+			case "windows":
+				return ec.fieldContext_ActionBillingBreakdown_windows(ctx, field)
+			case "ubuntu":
+				return ec.fieldContext_ActionBillingBreakdown_ubuntu(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ActionBillingBreakdown", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ActionBillingBreakdown_total(ctx context.Context, field graphql.CollectedField, obj *dto.ActionBillingBreakdown) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ActionBillingBreakdown_total(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Total, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ActionBillingBreakdown_total(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ActionBillingBreakdown",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ActionBillingBreakdown_macOS(ctx context.Context, field graphql.CollectedField, obj *dto.ActionBillingBreakdown) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ActionBillingBreakdown_macOS(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MacOs, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*dto.ActionBillingBreakdownMacOs)
+	fc.Result = res
+	return ec.marshalOActionBillingBreakdownMacOS2ᚖgithubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐActionBillingBreakdownMacOs(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ActionBillingBreakdown_macOS(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ActionBillingBreakdown",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "total":
+				return ec.fieldContext_ActionBillingBreakdownMacOS_total(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ActionBillingBreakdownMacOS", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ActionBillingBreakdown_windows(ctx context.Context, field graphql.CollectedField, obj *dto.ActionBillingBreakdown) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ActionBillingBreakdown_windows(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Windows, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*dto.ActionBillingBreakdownWindows)
+	fc.Result = res
+	return ec.marshalOActionBillingBreakdownWindows2ᚖgithubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐActionBillingBreakdownWindows(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ActionBillingBreakdown_windows(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ActionBillingBreakdown",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "total":
+				return ec.fieldContext_ActionBillingBreakdownWindows_total(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ActionBillingBreakdownWindows", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ActionBillingBreakdown_ubuntu(ctx context.Context, field graphql.CollectedField, obj *dto.ActionBillingBreakdown) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ActionBillingBreakdown_ubuntu(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Ubuntu, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*dto.ActionBillingBreakdownUbuntu)
+	fc.Result = res
+	return ec.marshalOActionBillingBreakdownUbuntu2ᚖgithubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐActionBillingBreakdownUbuntu(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ActionBillingBreakdown_ubuntu(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ActionBillingBreakdown",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "total":
+				return ec.fieldContext_ActionBillingBreakdownUbuntu_total(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ActionBillingBreakdownUbuntu", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ActionBillingBreakdownMacOS_total(ctx context.Context, field graphql.CollectedField, obj *dto.ActionBillingBreakdownMacOs) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ActionBillingBreakdownMacOS_total(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Total, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ActionBillingBreakdownMacOS_total(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ActionBillingBreakdownMacOS",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ActionBillingBreakdownUbuntu_total(ctx context.Context, field graphql.CollectedField, obj *dto.ActionBillingBreakdownUbuntu) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ActionBillingBreakdownUbuntu_total(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Total, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ActionBillingBreakdownUbuntu_total(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ActionBillingBreakdownUbuntu",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ActionBillingBreakdownWindows_total(ctx context.Context, field graphql.CollectedField, obj *dto.ActionBillingBreakdownWindows) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ActionBillingBreakdownWindows_total(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Total, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ActionBillingBreakdownWindows_total(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ActionBillingBreakdownWindows",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Organization_login(ctx context.Context, field graphql.CollectedField, obj *dto.Organization) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Organization_login(ctx, field)
 	if err != nil {
@@ -268,6 +911,108 @@ func (ec *executionContext) fieldContext_Organization_login(ctx context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _Organization_billing(ctx context.Context, field graphql.CollectedField, obj *dto.Organization) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Organization_billing(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Billing, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*dto.OrganizationBilling)
+	fc.Result = res
+	return ec.marshalNOrganizationBilling2ᚖgithubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐOrganizationBilling(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Organization_billing(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Organization",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "actions":
+				return ec.fieldContext_OrganizationBilling_actions(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type OrganizationBilling", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OrganizationBilling_actions(ctx context.Context, field graphql.CollectedField, obj *dto.OrganizationBilling) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_OrganizationBilling_actions(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.OrganizationBilling().Actions(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*dto.ActionBilling)
+	fc.Result = res
+	return ec.marshalNActionBilling2ᚖgithubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐActionBilling(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_OrganizationBilling_actions(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrganizationBilling",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "totalMinutesUsed":
+				return ec.fieldContext_ActionBilling_totalMinutesUsed(ctx, field)
+			case "totalPaidMinutesUsed":
+				return ec.fieldContext_ActionBilling_totalPaidMinutesUsed(ctx, field)
+			case "includedMinutes":
+				return ec.fieldContext_ActionBilling_includedMinutes(ctx, field)
+			case "minutedUsedBreakdown":
+				return ec.fieldContext_ActionBilling_minutedUsedBreakdown(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ActionBilling", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_organization(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_organization(ctx, field)
 	if err != nil {
@@ -306,6 +1051,8 @@ func (ec *executionContext) fieldContext_Query_organization(ctx context.Context,
 			switch field.Name {
 			case "login":
 				return ec.fieldContext_Organization_login(ctx, field)
+			case "billing":
+				return ec.fieldContext_Organization_billing(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Organization", field.Name)
 		},
@@ -2234,6 +2981,167 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(ctx context.Conte
 
 // region    **************************** object.gotpl ****************************
 
+var actionBillingImplementors = []string{"ActionBilling"}
+
+func (ec *executionContext) _ActionBilling(ctx context.Context, sel ast.SelectionSet, obj *dto.ActionBilling) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, actionBillingImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ActionBilling")
+		case "totalMinutesUsed":
+
+			out.Values[i] = ec._ActionBilling_totalMinutesUsed(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "totalPaidMinutesUsed":
+
+			out.Values[i] = ec._ActionBilling_totalPaidMinutesUsed(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "includedMinutes":
+
+			out.Values[i] = ec._ActionBilling_includedMinutes(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "minutedUsedBreakdown":
+
+			out.Values[i] = ec._ActionBilling_minutedUsedBreakdown(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var actionBillingBreakdownImplementors = []string{"ActionBillingBreakdown"}
+
+func (ec *executionContext) _ActionBillingBreakdown(ctx context.Context, sel ast.SelectionSet, obj *dto.ActionBillingBreakdown) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, actionBillingBreakdownImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ActionBillingBreakdown")
+		case "total":
+
+			out.Values[i] = ec._ActionBillingBreakdown_total(ctx, field, obj)
+
+		case "macOS":
+
+			out.Values[i] = ec._ActionBillingBreakdown_macOS(ctx, field, obj)
+
+		case "windows":
+
+			out.Values[i] = ec._ActionBillingBreakdown_windows(ctx, field, obj)
+
+		case "ubuntu":
+
+			out.Values[i] = ec._ActionBillingBreakdown_ubuntu(ctx, field, obj)
+
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var actionBillingBreakdownMacOSImplementors = []string{"ActionBillingBreakdownMacOS"}
+
+func (ec *executionContext) _ActionBillingBreakdownMacOS(ctx context.Context, sel ast.SelectionSet, obj *dto.ActionBillingBreakdownMacOs) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, actionBillingBreakdownMacOSImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ActionBillingBreakdownMacOS")
+		case "total":
+
+			out.Values[i] = ec._ActionBillingBreakdownMacOS_total(ctx, field, obj)
+
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var actionBillingBreakdownUbuntuImplementors = []string{"ActionBillingBreakdownUbuntu"}
+
+func (ec *executionContext) _ActionBillingBreakdownUbuntu(ctx context.Context, sel ast.SelectionSet, obj *dto.ActionBillingBreakdownUbuntu) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, actionBillingBreakdownUbuntuImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ActionBillingBreakdownUbuntu")
+		case "total":
+
+			out.Values[i] = ec._ActionBillingBreakdownUbuntu_total(ctx, field, obj)
+
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var actionBillingBreakdownWindowsImplementors = []string{"ActionBillingBreakdownWindows"}
+
+func (ec *executionContext) _ActionBillingBreakdownWindows(ctx context.Context, sel ast.SelectionSet, obj *dto.ActionBillingBreakdownWindows) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, actionBillingBreakdownWindowsImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ActionBillingBreakdownWindows")
+		case "total":
+
+			out.Values[i] = ec._ActionBillingBreakdownWindows_total(ctx, field, obj)
+
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var organizationImplementors = []string{"Organization"}
 
 func (ec *executionContext) _Organization(ctx context.Context, sel ast.SelectionSet, obj *dto.Organization) graphql.Marshaler {
@@ -2251,6 +3159,54 @@ func (ec *executionContext) _Organization(ctx context.Context, sel ast.Selection
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "billing":
+
+			out.Values[i] = ec._Organization_billing(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var organizationBillingImplementors = []string{"OrganizationBilling"}
+
+func (ec *executionContext) _OrganizationBilling(ctx context.Context, sel ast.SelectionSet, obj *dto.OrganizationBilling) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, organizationBillingImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("OrganizationBilling")
+		case "actions":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._OrganizationBilling_actions(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2642,6 +3598,30 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) marshalNActionBilling2githubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐActionBilling(ctx context.Context, sel ast.SelectionSet, v dto.ActionBilling) graphql.Marshaler {
+	return ec._ActionBilling(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNActionBilling2ᚖgithubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐActionBilling(ctx context.Context, sel ast.SelectionSet, v *dto.ActionBilling) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ActionBilling(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNActionBillingBreakdown2ᚖgithubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐActionBillingBreakdown(ctx context.Context, sel ast.SelectionSet, v *dto.ActionBillingBreakdown) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ActionBillingBreakdown(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -2655,6 +3635,46 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v interface{}) (float64, error) {
+	res, err := graphql.UnmarshalFloatContext(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.SelectionSet, v float64) graphql.Marshaler {
+	res := graphql.MarshalFloatContext(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return graphql.WrapContextMarshaler(ctx, res)
+}
+
+func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
+	res, err := graphql.UnmarshalInt(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	res := graphql.MarshalInt(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) marshalNOrganizationBilling2ᚖgithubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐOrganizationBilling(ctx context.Context, sel ast.SelectionSet, v *dto.OrganizationBilling) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._OrganizationBilling(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
@@ -2925,6 +3945,27 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	return res
 }
 
+func (ec *executionContext) marshalOActionBillingBreakdownMacOS2ᚖgithubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐActionBillingBreakdownMacOs(ctx context.Context, sel ast.SelectionSet, v *dto.ActionBillingBreakdownMacOs) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ActionBillingBreakdownMacOS(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOActionBillingBreakdownUbuntu2ᚖgithubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐActionBillingBreakdownUbuntu(ctx context.Context, sel ast.SelectionSet, v *dto.ActionBillingBreakdownUbuntu) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ActionBillingBreakdownUbuntu(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOActionBillingBreakdownWindows2ᚖgithubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐActionBillingBreakdownWindows(ctx context.Context, sel ast.SelectionSet, v *dto.ActionBillingBreakdownWindows) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ActionBillingBreakdownWindows(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -2948,6 +3989,22 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 		return graphql.Null
 	}
 	res := graphql.MarshalBoolean(*v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalInt(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalInt(*v)
 	return res
 }
 

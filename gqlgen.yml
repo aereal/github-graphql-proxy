@@ -13,6 +13,12 @@ resolver:
 autobind:
 #  - "github.com/aereal/github-graphql-proxy/graph/model"
 models:
+  Organization:
+    model:
+      - github.com/aereal/github-graphql-proxy/graph/dto.Organization
+  OrganizationBilling:
+    model:
+      - github.com/aereal/github-graphql-proxy/graph/dto.OrganizationBilling
   ID:
     model:
       - github.com/99designs/gqlgen/graphql.ID

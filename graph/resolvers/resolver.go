@@ -2,4 +2,14 @@
 
 package resolvers
 
-type Resolver struct{}
+import (
+	"github.com/google/go-github/v47/github"
+)
+
+func New(githubClient *github.Client) *Resolver {
+	return &Resolver{githubClient: githubClient}
+}
+
+type Resolver struct {
+	githubClient *github.Client
+}

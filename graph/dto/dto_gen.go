@@ -2,6 +2,28 @@
 
 package dto
 
-type Organization struct {
-	Login string `json:"login"`
+type ActionBilling struct {
+	TotalMinutesUsed     int                     `json:"totalMinutesUsed"`
+	TotalPaidMinutesUsed float64                 `json:"totalPaidMinutesUsed"`
+	IncludedMinutes      int                     `json:"includedMinutes"`
+	MinutedUsedBreakdown *ActionBillingBreakdown `json:"minutedUsedBreakdown"`
+}
+
+type ActionBillingBreakdown struct {
+	Total   *int                           `json:"total"`
+	MacOs   *ActionBillingBreakdownMacOs   `json:"macOS"`
+	Windows *ActionBillingBreakdownWindows `json:"windows"`
+	Ubuntu  *ActionBillingBreakdownUbuntu  `json:"ubuntu"`
+}
+
+type ActionBillingBreakdownMacOs struct {
+	Total *int `json:"total"`
+}
+
+type ActionBillingBreakdownUbuntu struct {
+	Total *int `json:"total"`
+}
+
+type ActionBillingBreakdownWindows struct {
+	Total *int `json:"total"`
 }

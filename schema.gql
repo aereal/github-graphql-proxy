@@ -1,5 +1,36 @@
 type Organization {
   login: String!
+  billing: OrganizationBilling!
+}
+
+type OrganizationBilling {
+  actions: ActionBilling!
+}
+
+type ActionBilling {
+  totalMinutesUsed: Int!
+  totalPaidMinutesUsed: Float!
+  includedMinutes: Int!
+  minutedUsedBreakdown: ActionBillingBreakdown!
+}
+
+type ActionBillingBreakdown {
+  total: Int
+  macOS: ActionBillingBreakdownMacOS
+  windows: ActionBillingBreakdownWindows
+  ubuntu: ActionBillingBreakdownUbuntu
+}
+
+type ActionBillingBreakdownMacOS {
+  total: Int
+}
+
+type ActionBillingBreakdownWindows {
+  total: Int
+}
+
+type ActionBillingBreakdownUbuntu {
+  total: Int
 }
 
 type Query {
