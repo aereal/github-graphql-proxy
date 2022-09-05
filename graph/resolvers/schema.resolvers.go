@@ -6,9 +6,11 @@ package resolvers
 import (
 	"context"
 
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/aereal/github-graphql-proxy/graph/dto"
 	"github.com/aereal/github-graphql-proxy/graph/handler"
 	"github.com/google/go-github/v47/github"
+	"github.com/vektah/gqlparser/v2/ast"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
@@ -93,7 +95,13 @@ func (r *repositoryResolver) Artifacts(ctx context.Context, obj *dto.Repository,
 	}
 	out := &dto.RepositoryArtifactConnection{Nodes: make([]*dto.Artifact, len(artifacts.Artifacts))}
 	out.TotalCount = len(artifacts.Artifacts)
+	path := graphql.GetPath(ctx)
+	path = append(path, ast.PathName("nodes"))
+	var gqlErr error
 	for i, artifact := range artifacts.Artifacts {
+		if i == 10 {
+			gqlErr = gqlerror.ErrorPathf(append(path, ast.PathIndex(i)), "error test")
+		}
 		size := artifact.GetSizeInBytes()
 		out.TotalSizeInBytes += size
 		a := &dto.Artifact{
@@ -111,7 +119,7 @@ func (r *repositoryResolver) Artifacts(ctx context.Context, obj *dto.Repository,
 		}
 		out.Nodes[i] = a
 	}
-	return out, nil
+	return out, gqlErr
 }
 
 // Organization returns handler.OrganizationResolver implementation.
