@@ -35,6 +35,19 @@ func (r *organizationBillingResolver) Actions(ctx context.Context, obj *dto.Orga
 	}, nil
 }
 
+// Storage is the resolver for the storage field.
+func (r *organizationBillingResolver) Storage(ctx context.Context, obj *dto.OrganizationBilling) (*dto.StorageBilling, error) {
+	billing, _, err := r.githubClient.Billing.GetStorageBillingOrg(ctx, obj.OrganizationLogin)
+	if err != nil {
+		return nil, gqlerror.Errorf("Billing.GetStorageBillingOrg: %s", err)
+	}
+	return &dto.StorageBilling{
+		DaysLeftInBillingCycle:       billing.DaysLeftInBillingCycle,
+		EstimatedPaidStorageForMonth: billing.EstimatedPaidStorageForMonth,
+		EstimatedStorageForMonth:     billing.EstimatedStorageForMonth,
+	}, nil
+}
+
 // Organization is the resolver for the organization field.
 func (r *queryResolver) Organization(ctx context.Context, login string) (*dto.Organization, error) {
 	return &dto.Organization{Login: login, Billing: &dto.OrganizationBilling{OrganizationLogin: login}}, nil

@@ -5,6 +5,13 @@ type Organization {
 
 type OrganizationBilling {
   actions: ActionBilling!
+  storage: StorageBilling!
+}
+
+type StorageBilling {
+  daysLeftInBillingCycle: Int!
+  estimatedPaidStorageForMonth: Float!
+  estimatedStorageForMonth: Int!
 }
 
 type ActionBilling {

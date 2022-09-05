@@ -77,15 +77,23 @@ type ComplexityRoot struct {
 
 	OrganizationBilling struct {
 		Actions func(childComplexity int) int
+		Storage func(childComplexity int) int
 	}
 
 	Query struct {
 		Organization func(childComplexity int, login string) int
 	}
+
+	StorageBilling struct {
+		DaysLeftInBillingCycle       func(childComplexity int) int
+		EstimatedPaidStorageForMonth func(childComplexity int) int
+		EstimatedStorageForMonth     func(childComplexity int) int
+	}
 }
 
 type OrganizationBillingResolver interface {
 	Actions(ctx context.Context, obj *dto.OrganizationBilling) (*dto.ActionBilling, error)
+	Storage(ctx context.Context, obj *dto.OrganizationBilling) (*dto.StorageBilling, error)
 }
 type QueryResolver interface {
 	Organization(ctx context.Context, login string) (*dto.Organization, error)
@@ -204,6 +212,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.OrganizationBilling.Actions(childComplexity), true
 
+	case "OrganizationBilling.storage":
+		if e.complexity.OrganizationBilling.Storage == nil {
+			break
+		}
+
+		return e.complexity.OrganizationBilling.Storage(childComplexity), true
+
 	case "Query.organization":
 		if e.complexity.Query.Organization == nil {
 			break
@@ -215,6 +230,27 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.Organization(childComplexity, args["login"].(string)), true
+
+	case "StorageBilling.daysLeftInBillingCycle":
+		if e.complexity.StorageBilling.DaysLeftInBillingCycle == nil {
+			break
+		}
+
+		return e.complexity.StorageBilling.DaysLeftInBillingCycle(childComplexity), true
+
+	case "StorageBilling.estimatedPaidStorageForMonth":
+		if e.complexity.StorageBilling.EstimatedPaidStorageForMonth == nil {
+			break
+		}
+
+		return e.complexity.StorageBilling.EstimatedPaidStorageForMonth(childComplexity), true
+
+	case "StorageBilling.estimatedStorageForMonth":
+		if e.complexity.StorageBilling.EstimatedStorageForMonth == nil {
+			break
+		}
+
+		return e.complexity.StorageBilling.EstimatedStorageForMonth(childComplexity), true
 
 	}
 	return 0, false
@@ -275,6 +311,13 @@ var sources = []*ast.Source{
 
 type OrganizationBilling {
   actions: ActionBilling!
+  storage: StorageBilling!
+}
+
+type StorageBilling {
+  daysLeftInBillingCycle: Int!
+  estimatedPaidStorageForMonth: Float!
+  estimatedStorageForMonth: Int!
 }
 
 type ActionBilling {
@@ -952,6 +995,8 @@ func (ec *executionContext) fieldContext_Organization_billing(ctx context.Contex
 			switch field.Name {
 			case "actions":
 				return ec.fieldContext_OrganizationBilling_actions(ctx, field)
+			case "storage":
+				return ec.fieldContext_OrganizationBilling_storage(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type OrganizationBilling", field.Name)
 		},
@@ -1008,6 +1053,58 @@ func (ec *executionContext) fieldContext_OrganizationBilling_actions(ctx context
 				return ec.fieldContext_ActionBilling_minutedUsedBreakdown(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ActionBilling", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OrganizationBilling_storage(ctx context.Context, field graphql.CollectedField, obj *dto.OrganizationBilling) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_OrganizationBilling_storage(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.OrganizationBilling().Storage(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*dto.StorageBilling)
+	fc.Result = res
+	return ec.marshalNStorageBilling2ᚖgithubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐStorageBilling(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_OrganizationBilling_storage(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrganizationBilling",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "daysLeftInBillingCycle":
+				return ec.fieldContext_StorageBilling_daysLeftInBillingCycle(ctx, field)
+			case "estimatedPaidStorageForMonth":
+				return ec.fieldContext_StorageBilling_estimatedPaidStorageForMonth(ctx, field)
+			case "estimatedStorageForMonth":
+				return ec.fieldContext_StorageBilling_estimatedStorageForMonth(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type StorageBilling", field.Name)
 		},
 	}
 	return fc, nil
@@ -1195,6 +1292,138 @@ func (ec *executionContext) fieldContext_Query___schema(ctx context.Context, fie
 				return ec.fieldContext___Schema_directives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Schema", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StorageBilling_daysLeftInBillingCycle(ctx context.Context, field graphql.CollectedField, obj *dto.StorageBilling) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StorageBilling_daysLeftInBillingCycle(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DaysLeftInBillingCycle, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StorageBilling_daysLeftInBillingCycle(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StorageBilling",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StorageBilling_estimatedPaidStorageForMonth(ctx context.Context, field graphql.CollectedField, obj *dto.StorageBilling) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StorageBilling_estimatedPaidStorageForMonth(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.EstimatedPaidStorageForMonth, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StorageBilling_estimatedPaidStorageForMonth(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StorageBilling",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StorageBilling_estimatedStorageForMonth(ctx context.Context, field graphql.CollectedField, obj *dto.StorageBilling) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StorageBilling_estimatedStorageForMonth(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.EstimatedStorageForMonth, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StorageBilling_estimatedStorageForMonth(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StorageBilling",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -3207,6 +3436,26 @@ func (ec *executionContext) _OrganizationBilling(ctx context.Context, sel ast.Se
 				return innerFunc(ctx)
 
 			})
+		case "storage":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._OrganizationBilling_storage(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3269,6 +3518,48 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				return ec._Query___schema(ctx, field)
 			})
 
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var storageBillingImplementors = []string{"StorageBilling"}
+
+func (ec *executionContext) _StorageBilling(ctx context.Context, sel ast.SelectionSet, obj *dto.StorageBilling) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, storageBillingImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("StorageBilling")
+		case "daysLeftInBillingCycle":
+
+			out.Values[i] = ec._StorageBilling_daysLeftInBillingCycle(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "estimatedPaidStorageForMonth":
+
+			out.Values[i] = ec._StorageBilling_estimatedPaidStorageForMonth(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "estimatedStorageForMonth":
+
+			out.Values[i] = ec._StorageBilling_estimatedStorageForMonth(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3675,6 +3966,20 @@ func (ec *executionContext) marshalNOrganizationBilling2ᚖgithubᚗcomᚋaereal
 		return graphql.Null
 	}
 	return ec._OrganizationBilling(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNStorageBilling2githubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐStorageBilling(ctx context.Context, sel ast.SelectionSet, v dto.StorageBilling) graphql.Marshaler {
+	return ec._StorageBilling(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNStorageBilling2ᚖgithubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐStorageBilling(ctx context.Context, sel ast.SelectionSet, v *dto.StorageBilling) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._StorageBilling(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {

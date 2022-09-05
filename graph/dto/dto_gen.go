@@ -27,3 +27,9 @@ type ActionBillingBreakdownUbuntu struct {
 type ActionBillingBreakdownWindows struct {
 	Total *int `json:"total"`
 }
+
+type StorageBilling struct {
+	DaysLeftInBillingCycle       int     `json:"daysLeftInBillingCycle"`
+	EstimatedPaidStorageForMonth float64 `json:"estimatedPaidStorageForMonth"`
+	EstimatedStorageForMonth     int     `json:"estimatedStorageForMonth"`
+}
