@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -17,7 +18,7 @@ import (
 func Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	mux.Handle("/query", graph.NewHTTPHandler())
+	mux.Handle("/query", graph.NewHTTPHandler(runtime.GOMAXPROCS(0)))
 	return mux
 }
 

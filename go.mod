@@ -7,6 +7,7 @@ require (
 	github.com/google/go-github/v47 v47.0.0
 	github.com/vektah/gqlparser/v2 v2.5.0
 	golang.org/x/oauth2 v0.0.0-20220822191816-0ebed06d0094
+	golang.org/x/sync v0.0.0-20220819030929-7fc1605a5dde
 )
 
 require (
