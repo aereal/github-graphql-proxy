@@ -19,6 +19,12 @@ models:
   OrganizationBilling:
     model:
       - github.com/aereal/github-graphql-proxy/graph/dto.OrganizationBilling
+  Repository:
+    model:
+      - github.com/aereal/github-graphql-proxy/graph/dto.Repository
+  RepositoryArtifactConnection:
+    model:
+      - github.com/aereal/github-graphql-proxy/graph/dto.RepositoryArtifactConnection
   ID:
     model:
       - github.com/99designs/gqlgen/graphql.ID

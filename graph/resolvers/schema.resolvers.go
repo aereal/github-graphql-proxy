@@ -8,6 +8,7 @@ import (
 
 	"github.com/aereal/github-graphql-proxy/graph/dto"
 	"github.com/aereal/github-graphql-proxy/graph/handler"
+	"github.com/google/go-github/v47/github"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
@@ -72,6 +73,47 @@ func (r *queryResolver) Organization(ctx context.Context, login string) (*dto.Or
 	return &dto.Organization{Login: login, Billing: &dto.OrganizationBilling{OrganizationLogin: login}}, nil
 }
 
+// Repository is the resolver for the repository field.
+func (r *queryResolver) Repository(ctx context.Context, owner string, name string) (*dto.Repository, error) {
+	return &dto.Repository{Owner: owner, Name: name}, nil
+}
+
+// Artifacts is the resolver for the artifacts field.
+func (r *repositoryResolver) Artifacts(ctx context.Context, obj *dto.Repository, first *int, page *int) (*dto.RepositoryArtifactConnection, error) {
+	listOpts := &github.ListOptions{}
+	if first != nil {
+		listOpts.PerPage = *first
+	}
+	if page != nil {
+		listOpts.Page = *page
+	}
+	artifacts, _, err := r.githubClient.Actions.ListArtifacts(ctx, obj.Owner, obj.Name, listOpts)
+	if err != nil {
+		return nil, gqlerror.Errorf("Actions.ListArtifacts: %v", err)
+	}
+	out := &dto.RepositoryArtifactConnection{Nodes: make([]*dto.Artifact, len(artifacts.Artifacts))}
+	out.TotalCount = len(artifacts.Artifacts)
+	for i, artifact := range artifacts.Artifacts {
+		size := artifact.GetSizeInBytes()
+		out.TotalSizeInBytes += size
+		a := &dto.Artifact{
+			ID:                 int(artifact.GetID()),
+			Name:               artifact.GetName(),
+			SizeInBytes:        int(size),
+			ArchiveDownloadURL: artifact.GetArchiveDownloadURL(),
+			Expired:            artifact.GetExpired(),
+		}
+		if artifact.CreatedAt != nil {
+			a.CreatedAt = artifact.CreatedAt.Time
+		}
+		if artifact.ExpiresAt != nil {
+			a.ExpiresAt = artifact.ExpiresAt.Time
+		}
+		out.Nodes[i] = a
+	}
+	return out, nil
+}
+
 // Organization returns handler.OrganizationResolver implementation.
 func (r *Resolver) Organization() handler.OrganizationResolver { return &organizationResolver{r} }
 
@@ -83,6 +125,10 @@ func (r *Resolver) OrganizationBilling() handler.OrganizationBillingResolver {
 // Query returns handler.QueryResolver implementation.
 func (r *Resolver) Query() handler.QueryResolver { return &queryResolver{r} }
 
+// Repository returns handler.RepositoryResolver implementation.
+func (r *Resolver) Repository() handler.RepositoryResolver { return &repositoryResolver{r} }
+
 type organizationResolver struct{ *Resolver }
 type organizationBillingResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+type repositoryResolver struct{ *Resolver }

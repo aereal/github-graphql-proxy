@@ -1,3 +1,7 @@
+scalar Int64
+
+scalar Time
+
 type Organization {
   login: String!
   billing: OrganizationBilling!
@@ -50,6 +54,28 @@ type ActionBillingBreakdownUbuntu {
   total: Int
 }
 
+type Artifact {
+  id: Int!
+  name: String!
+  sizeInBytes: Int!
+  archiveDownloadURL: String!
+  expired: Boolean!
+  createdAt: Time!
+  expiresAt: Time!
+}
+
+type RepositoryArtifactConnection {
+  totalCount: Int!
+  totalSizeInBytes: Int!
+  nodes: [Artifact]!
+}
+
+type Repository {
+  name: String!
+  artifacts(first: Int, page: Int): RepositoryArtifactConnection!
+}
+
 type Query {
   organization(login: String!): Organization
+  repository(owner: String!, name: String!): Repository
 }

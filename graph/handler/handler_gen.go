@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
@@ -39,6 +40,7 @@ type ResolverRoot interface {
 	Organization() OrganizationResolver
 	OrganizationBilling() OrganizationBillingResolver
 	Query() QueryResolver
+	Repository() RepositoryResolver
 }
 
 type DirectiveRoot struct {
@@ -71,6 +73,16 @@ type ComplexityRoot struct {
 		Total func(childComplexity int) int
 	}
 
+	Artifact struct {
+		ArchiveDownloadURL func(childComplexity int) int
+		CreatedAt          func(childComplexity int) int
+		Expired            func(childComplexity int) int
+		ExpiresAt          func(childComplexity int) int
+		ID                 func(childComplexity int) int
+		Name               func(childComplexity int) int
+		SizeInBytes        func(childComplexity int) int
+	}
+
 	Organization struct {
 		Billing func(childComplexity int) int
 		Login   func(childComplexity int) int
@@ -93,6 +105,18 @@ type ComplexityRoot struct {
 
 	Query struct {
 		Organization func(childComplexity int, login string) int
+		Repository   func(childComplexity int, owner string, name string) int
+	}
+
+	Repository struct {
+		Artifacts func(childComplexity int, first *int, page *int) int
+		Name      func(childComplexity int) int
+	}
+
+	RepositoryArtifactConnection struct {
+		Nodes            func(childComplexity int) int
+		TotalCount       func(childComplexity int) int
+		TotalSizeInBytes func(childComplexity int) int
 	}
 
 	StorageBilling struct {
@@ -111,6 +135,10 @@ type OrganizationBillingResolver interface {
 }
 type QueryResolver interface {
 	Organization(ctx context.Context, login string) (*dto.Organization, error)
+	Repository(ctx context.Context, owner string, name string) (*dto.Repository, error)
+}
+type RepositoryResolver interface {
+	Artifacts(ctx context.Context, obj *dto.Repository, first *int, page *int) (*dto.RepositoryArtifactConnection, error)
 }
 
 type executableSchema struct {
@@ -205,6 +233,55 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ActionBillingBreakdownWindows.Total(childComplexity), true
 
+	case "Artifact.archiveDownloadURL":
+		if e.complexity.Artifact.ArchiveDownloadURL == nil {
+			break
+		}
+
+		return e.complexity.Artifact.ArchiveDownloadURL(childComplexity), true
+
+	case "Artifact.createdAt":
+		if e.complexity.Artifact.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.Artifact.CreatedAt(childComplexity), true
+
+	case "Artifact.expired":
+		if e.complexity.Artifact.Expired == nil {
+			break
+		}
+
+		return e.complexity.Artifact.Expired(childComplexity), true
+
+	case "Artifact.expiresAt":
+		if e.complexity.Artifact.ExpiresAt == nil {
+			break
+		}
+
+		return e.complexity.Artifact.ExpiresAt(childComplexity), true
+
+	case "Artifact.id":
+		if e.complexity.Artifact.ID == nil {
+			break
+		}
+
+		return e.complexity.Artifact.ID(childComplexity), true
+
+	case "Artifact.name":
+		if e.complexity.Artifact.Name == nil {
+			break
+		}
+
+		return e.complexity.Artifact.Name(childComplexity), true
+
+	case "Artifact.sizeInBytes":
+		if e.complexity.Artifact.SizeInBytes == nil {
+			break
+		}
+
+		return e.complexity.Artifact.SizeInBytes(childComplexity), true
+
 	case "Organization.billing":
 		if e.complexity.Organization.Billing == nil {
 			break
@@ -294,6 +371,58 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Organization(childComplexity, args["login"].(string)), true
 
+	case "Query.repository":
+		if e.complexity.Query.Repository == nil {
+			break
+		}
+
+		args, err := ec.field_Query_repository_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Repository(childComplexity, args["owner"].(string), args["name"].(string)), true
+
+	case "Repository.artifacts":
+		if e.complexity.Repository.Artifacts == nil {
+			break
+		}
+
+		args, err := ec.field_Repository_artifacts_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Repository.Artifacts(childComplexity, args["first"].(*int), args["page"].(*int)), true
+
+	case "Repository.name":
+		if e.complexity.Repository.Name == nil {
+			break
+		}
+
+		return e.complexity.Repository.Name(childComplexity), true
+
+	case "RepositoryArtifactConnection.nodes":
+		if e.complexity.RepositoryArtifactConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.RepositoryArtifactConnection.Nodes(childComplexity), true
+
+	case "RepositoryArtifactConnection.totalCount":
+		if e.complexity.RepositoryArtifactConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.RepositoryArtifactConnection.TotalCount(childComplexity), true
+
+	case "RepositoryArtifactConnection.totalSizeInBytes":
+		if e.complexity.RepositoryArtifactConnection.TotalSizeInBytes == nil {
+			break
+		}
+
+		return e.complexity.RepositoryArtifactConnection.TotalSizeInBytes(childComplexity), true
+
 	case "StorageBilling.daysLeftInBillingCycle":
 		if e.complexity.StorageBilling.DaysLeftInBillingCycle == nil {
 			break
@@ -367,7 +496,11 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var sources = []*ast.Source{
-	{Name: "../../schema.gql", Input: `type Organization {
+	{Name: "../../schema.gql", Input: `scalar Int64
+
+scalar Time
+
+type Organization {
   login: String!
   billing: OrganizationBilling!
   plan: Plan
@@ -419,8 +552,30 @@ type ActionBillingBreakdownUbuntu {
   total: Int
 }
 
+type Artifact {
+  id: Int!
+  name: String!
+  sizeInBytes: Int!
+  archiveDownloadURL: String!
+  expired: Boolean!
+  createdAt: Time!
+  expiresAt: Time!
+}
+
+type RepositoryArtifactConnection {
+  totalCount: Int!
+  totalSizeInBytes: Int!
+  nodes: [Artifact]!
+}
+
+type Repository {
+  name: String!
+  artifacts(first: Int, page: Int): RepositoryArtifactConnection!
+}
+
 type Query {
   organization(login: String!): Organization
+  repository(owner: String!, name: String!): Repository
 }
 `, BuiltIn: false},
 }
@@ -457,6 +612,54 @@ func (ec *executionContext) field_Query_organization_args(ctx context.Context, r
 		}
 	}
 	args["login"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_repository_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["owner"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("owner"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["owner"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["name"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["name"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Repository_artifacts_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *int
+	if tmp, ok := rawArgs["first"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["first"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["page"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["page"] = arg1
 	return args, nil
 }
 
@@ -978,6 +1181,314 @@ func (ec *executionContext) fieldContext_ActionBillingBreakdownWindows_total(ctx
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Artifact_id(ctx context.Context, field graphql.CollectedField, obj *dto.Artifact) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Artifact_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Artifact_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Artifact",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Artifact_name(ctx context.Context, field graphql.CollectedField, obj *dto.Artifact) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Artifact_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Artifact_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Artifact",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Artifact_sizeInBytes(ctx context.Context, field graphql.CollectedField, obj *dto.Artifact) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Artifact_sizeInBytes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SizeInBytes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Artifact_sizeInBytes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Artifact",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Artifact_archiveDownloadURL(ctx context.Context, field graphql.CollectedField, obj *dto.Artifact) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Artifact_archiveDownloadURL(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ArchiveDownloadURL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Artifact_archiveDownloadURL(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Artifact",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Artifact_expired(ctx context.Context, field graphql.CollectedField, obj *dto.Artifact) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Artifact_expired(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Expired, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Artifact_expired(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Artifact",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Artifact_createdAt(ctx context.Context, field graphql.CollectedField, obj *dto.Artifact) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Artifact_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Artifact_createdAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Artifact",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Artifact_expiresAt(ctx context.Context, field graphql.CollectedField, obj *dto.Artifact) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Artifact_expiresAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ExpiresAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Artifact_expiresAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Artifact",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
 		},
 	}
 	return fc, nil
@@ -1544,6 +2055,64 @@ func (ec *executionContext) fieldContext_Query_organization(ctx context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_repository(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_repository(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Repository(rctx, fc.Args["owner"].(string), fc.Args["name"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*dto.Repository)
+	fc.Result = res
+	return ec.marshalORepository2ᚖgithubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐRepository(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_repository(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "name":
+				return ec.fieldContext_Repository_name(ctx, field)
+			case "artifacts":
+				return ec.fieldContext_Repository_artifacts(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Repository", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_repository_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query___type(ctx, field)
 	if err != nil {
@@ -1668,6 +2237,261 @@ func (ec *executionContext) fieldContext_Query___schema(ctx context.Context, fie
 				return ec.fieldContext___Schema_directives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Schema", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Repository_name(ctx context.Context, field graphql.CollectedField, obj *dto.Repository) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Repository_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Repository_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Repository",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Repository_artifacts(ctx context.Context, field graphql.CollectedField, obj *dto.Repository) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Repository_artifacts(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Repository().Artifacts(rctx, obj, fc.Args["first"].(*int), fc.Args["page"].(*int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*dto.RepositoryArtifactConnection)
+	fc.Result = res
+	return ec.marshalNRepositoryArtifactConnection2ᚖgithubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐRepositoryArtifactConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Repository_artifacts(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Repository",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "totalCount":
+				return ec.fieldContext_RepositoryArtifactConnection_totalCount(ctx, field)
+			case "totalSizeInBytes":
+				return ec.fieldContext_RepositoryArtifactConnection_totalSizeInBytes(ctx, field)
+			case "nodes":
+				return ec.fieldContext_RepositoryArtifactConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RepositoryArtifactConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Repository_artifacts_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RepositoryArtifactConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *dto.RepositoryArtifactConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_RepositoryArtifactConnection_totalCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_RepositoryArtifactConnection_totalCount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RepositoryArtifactConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RepositoryArtifactConnection_totalSizeInBytes(ctx context.Context, field graphql.CollectedField, obj *dto.RepositoryArtifactConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_RepositoryArtifactConnection_totalSizeInBytes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalSizeInBytes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_RepositoryArtifactConnection_totalSizeInBytes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RepositoryArtifactConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RepositoryArtifactConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *dto.RepositoryArtifactConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_RepositoryArtifactConnection_nodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Nodes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*dto.Artifact)
+	fc.Result = res
+	return ec.marshalNArtifact2ᚕᚖgithubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐArtifact(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_RepositoryArtifactConnection_nodes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RepositoryArtifactConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Artifact_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Artifact_name(ctx, field)
+			case "sizeInBytes":
+				return ec.fieldContext_Artifact_sizeInBytes(ctx, field)
+			case "archiveDownloadURL":
+				return ec.fieldContext_Artifact_archiveDownloadURL(ctx, field)
+			case "expired":
+				return ec.fieldContext_Artifact_expired(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Artifact_createdAt(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_Artifact_expiresAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Artifact", field.Name)
 		},
 	}
 	return fc, nil
@@ -3747,6 +4571,76 @@ func (ec *executionContext) _ActionBillingBreakdownWindows(ctx context.Context, 
 	return out
 }
 
+var artifactImplementors = []string{"Artifact"}
+
+func (ec *executionContext) _Artifact(ctx context.Context, sel ast.SelectionSet, obj *dto.Artifact) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, artifactImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Artifact")
+		case "id":
+
+			out.Values[i] = ec._Artifact_id(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "name":
+
+			out.Values[i] = ec._Artifact_name(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "sizeInBytes":
+
+			out.Values[i] = ec._Artifact_sizeInBytes(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "archiveDownloadURL":
+
+			out.Values[i] = ec._Artifact_archiveDownloadURL(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "expired":
+
+			out.Values[i] = ec._Artifact_expired(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createdAt":
+
+			out.Values[i] = ec._Artifact_createdAt(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "expiresAt":
+
+			out.Values[i] = ec._Artifact_expiresAt(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var organizationImplementors = []string{"Organization"}
 
 func (ec *executionContext) _Organization(ctx context.Context, sel ast.SelectionSet, obj *dto.Organization) graphql.Marshaler {
@@ -3944,6 +4838,26 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Concurrently(i, func() graphql.Marshaler {
 				return rrm(innerCtx)
 			})
+		case "repository":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_repository(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
 		case "__type":
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
@@ -3956,6 +4870,96 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				return ec._Query___schema(ctx, field)
 			})
 
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var repositoryImplementors = []string{"Repository"}
+
+func (ec *executionContext) _Repository(ctx context.Context, sel ast.SelectionSet, obj *dto.Repository) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, repositoryImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Repository")
+		case "name":
+
+			out.Values[i] = ec._Repository_name(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "artifacts":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Repository_artifacts(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var repositoryArtifactConnectionImplementors = []string{"RepositoryArtifactConnection"}
+
+func (ec *executionContext) _RepositoryArtifactConnection(ctx context.Context, sel ast.SelectionSet, obj *dto.RepositoryArtifactConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, repositoryArtifactConnectionImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RepositoryArtifactConnection")
+		case "totalCount":
+
+			out.Values[i] = ec._RepositoryArtifactConnection_totalCount(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "totalSizeInBytes":
+
+			out.Values[i] = ec._RepositoryArtifactConnection_totalSizeInBytes(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "nodes":
+
+			out.Values[i] = ec._RepositoryArtifactConnection_nodes(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4351,6 +5355,44 @@ func (ec *executionContext) marshalNActionBillingBreakdown2ᚖgithubᚗcomᚋaer
 	return ec._ActionBillingBreakdown(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNArtifact2ᚕᚖgithubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐArtifact(ctx context.Context, sel ast.SelectionSet, v []*dto.Artifact) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOArtifact2ᚖgithubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐArtifact(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -4396,6 +5438,21 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 	return res
 }
 
+func (ec *executionContext) unmarshalNInt2int64(ctx context.Context, v interface{}) (int64, error) {
+	res, err := graphql.UnmarshalInt64(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNInt2int64(ctx context.Context, sel ast.SelectionSet, v int64) graphql.Marshaler {
+	res := graphql.MarshalInt64(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) marshalNOrganizationBilling2ᚖgithubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐOrganizationBilling(ctx context.Context, sel ast.SelectionSet, v *dto.OrganizationBilling) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -4404,6 +5461,20 @@ func (ec *executionContext) marshalNOrganizationBilling2ᚖgithubᚗcomᚋaereal
 		return graphql.Null
 	}
 	return ec._OrganizationBilling(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNRepositoryArtifactConnection2githubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐRepositoryArtifactConnection(ctx context.Context, sel ast.SelectionSet, v dto.RepositoryArtifactConnection) graphql.Marshaler {
+	return ec._RepositoryArtifactConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNRepositoryArtifactConnection2ᚖgithubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐRepositoryArtifactConnection(ctx context.Context, sel ast.SelectionSet, v *dto.RepositoryArtifactConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RepositoryArtifactConnection(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNStorageBilling2githubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐStorageBilling(ctx context.Context, sel ast.SelectionSet, v dto.StorageBilling) graphql.Marshaler {
@@ -4427,6 +5498,21 @@ func (ec *executionContext) unmarshalNString2string(ctx context.Context, v inter
 
 func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
 	res := graphql.MarshalString(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNTime2timeᚐTime(ctx context.Context, v interface{}) (time.Time, error) {
+	res, err := graphql.UnmarshalTime(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel ast.SelectionSet, v time.Time) graphql.Marshaler {
+	res := graphql.MarshalTime(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -4709,6 +5795,13 @@ func (ec *executionContext) marshalOActionBillingBreakdownWindows2ᚖgithubᚗco
 	return ec._ActionBillingBreakdownWindows(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalOArtifact2ᚖgithubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐArtifact(ctx context.Context, sel ast.SelectionSet, v *dto.Artifact) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Artifact(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -4763,6 +5856,13 @@ func (ec *executionContext) marshalOPlan2ᚖgithubᚗcomᚋaerealᚋgithubᚑgra
 		return graphql.Null
 	}
 	return ec._Plan(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalORepository2ᚖgithubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐRepository(ctx context.Context, sel ast.SelectionSet, v *dto.Repository) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Repository(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v interface{}) (*string, error) {

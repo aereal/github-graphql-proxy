@@ -2,6 +2,10 @@
 
 package dto
 
+import (
+	"time"
+)
+
 type ActionBilling struct {
 	TotalMinutesUsed     int                     `json:"totalMinutesUsed"`
 	TotalPaidMinutesUsed float64                 `json:"totalPaidMinutesUsed"`
@@ -26,6 +30,16 @@ type ActionBillingBreakdownUbuntu struct {
 
 type ActionBillingBreakdownWindows struct {
 	Total *int `json:"total"`
+}
+
+type Artifact struct {
+	ID                 int       `json:"id"`
+	Name               string    `json:"name"`
+	SizeInBytes        int       `json:"sizeInBytes"`
+	ArchiveDownloadURL string    `json:"archiveDownloadURL"`
+	Expired            bool      `json:"expired"`
+	CreatedAt          time.Time `json:"createdAt"`
+	ExpiresAt          time.Time `json:"expiresAt"`
 }
 
 type Plan struct {
