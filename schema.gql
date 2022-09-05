@@ -1,0 +1,7 @@
+type Organization {
+  login: String!
+}
+
+type Query {
+  organization(login: String!): Organization
+}

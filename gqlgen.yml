@@ -1,0 +1,26 @@
+schema:
+  - schema.gql
+exec:
+  filename: graph/handler/handler_gen.go
+  package: handler
+model:
+  filename: graph/dto/dto_gen.go
+  package: dto
+resolver:
+  layout: follow-schema
+  dir: graph/resolvers
+  package: resolvers
+autobind:
+#  - "github.com/aereal/github-graphql-proxy/graph/model"
+models:
+  ID:
+    model:
+      - github.com/99designs/gqlgen/graphql.ID
+      - github.com/99designs/gqlgen/graphql.Int
+      - github.com/99designs/gqlgen/graphql.Int64
+      - github.com/99designs/gqlgen/graphql.Int32
+  Int:
+    model:
+      - github.com/99designs/gqlgen/graphql.Int
+      - github.com/99designs/gqlgen/graphql.Int64
+      - github.com/99designs/gqlgen/graphql.Int32
