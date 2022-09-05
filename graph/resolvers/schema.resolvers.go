@@ -11,6 +11,25 @@ import (
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
+// Plan is the resolver for the plan field.
+func (r *organizationResolver) Plan(ctx context.Context, obj *dto.Organization) (*dto.Plan, error) {
+	org, _, err := r.githubClient.Organizations.Get(ctx, obj.Login)
+	if err != nil {
+		return nil, gqlerror.Errorf("Organizations.Get: %s", err)
+	}
+	if org.Plan == nil {
+		return nil, nil
+	}
+	return &dto.Plan{
+		Name:          org.Plan.Name,
+		Space:         org.Plan.Space,
+		Collaborators: org.Plan.Collaborators,
+		PrivateRepos:  org.Plan.PrivateRepos,
+		FilledSeats:   org.Plan.FilledSeats,
+		Seats:         org.Plan.Seats,
+	}, nil
+}
+
 // Actions is the resolver for the actions field.
 func (r *organizationBillingResolver) Actions(ctx context.Context, obj *dto.OrganizationBilling) (*dto.ActionBilling, error) {
 	billing, _, err := r.githubClient.Billing.GetActionsBillingOrg(ctx, obj.OrganizationLogin)
@@ -53,6 +72,9 @@ func (r *queryResolver) Organization(ctx context.Context, login string) (*dto.Or
 	return &dto.Organization{Login: login, Billing: &dto.OrganizationBilling{OrganizationLogin: login}}, nil
 }
 
+// Organization returns handler.OrganizationResolver implementation.
+func (r *Resolver) Organization() handler.OrganizationResolver { return &organizationResolver{r} }
+
 // OrganizationBilling returns handler.OrganizationBillingResolver implementation.
 func (r *Resolver) OrganizationBilling() handler.OrganizationBillingResolver {
 	return &organizationBillingResolver{r}
@@ -61,5 +83,6 @@ func (r *Resolver) OrganizationBilling() handler.OrganizationBillingResolver {
 // Query returns handler.QueryResolver implementation.
 func (r *Resolver) Query() handler.QueryResolver { return &queryResolver{r} }
 
+type organizationResolver struct{ *Resolver }
 type organizationBillingResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }

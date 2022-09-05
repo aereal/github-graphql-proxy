@@ -36,6 +36,7 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	Organization() OrganizationResolver
 	OrganizationBilling() OrganizationBillingResolver
 	Query() QueryResolver
 }
@@ -73,11 +74,21 @@ type ComplexityRoot struct {
 	Organization struct {
 		Billing func(childComplexity int) int
 		Login   func(childComplexity int) int
+		Plan    func(childComplexity int) int
 	}
 
 	OrganizationBilling struct {
 		Actions func(childComplexity int) int
 		Storage func(childComplexity int) int
+	}
+
+	Plan struct {
+		Collaborators func(childComplexity int) int
+		FilledSeats   func(childComplexity int) int
+		Name          func(childComplexity int) int
+		PrivateRepos  func(childComplexity int) int
+		Seats         func(childComplexity int) int
+		Space         func(childComplexity int) int
 	}
 
 	Query struct {
@@ -91,6 +102,9 @@ type ComplexityRoot struct {
 	}
 }
 
+type OrganizationResolver interface {
+	Plan(ctx context.Context, obj *dto.Organization) (*dto.Plan, error)
+}
 type OrganizationBillingResolver interface {
 	Actions(ctx context.Context, obj *dto.OrganizationBilling) (*dto.ActionBilling, error)
 	Storage(ctx context.Context, obj *dto.OrganizationBilling) (*dto.StorageBilling, error)
@@ -205,6 +219,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Organization.Login(childComplexity), true
 
+	case "Organization.plan":
+		if e.complexity.Organization.Plan == nil {
+			break
+		}
+
+		return e.complexity.Organization.Plan(childComplexity), true
+
 	case "OrganizationBilling.actions":
 		if e.complexity.OrganizationBilling.Actions == nil {
 			break
@@ -218,6 +239,48 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.OrganizationBilling.Storage(childComplexity), true
+
+	case "Plan.collaborators":
+		if e.complexity.Plan.Collaborators == nil {
+			break
+		}
+
+		return e.complexity.Plan.Collaborators(childComplexity), true
+
+	case "Plan.filledSeats":
+		if e.complexity.Plan.FilledSeats == nil {
+			break
+		}
+
+		return e.complexity.Plan.FilledSeats(childComplexity), true
+
+	case "Plan.name":
+		if e.complexity.Plan.Name == nil {
+			break
+		}
+
+		return e.complexity.Plan.Name(childComplexity), true
+
+	case "Plan.privateRepos":
+		if e.complexity.Plan.PrivateRepos == nil {
+			break
+		}
+
+		return e.complexity.Plan.PrivateRepos(childComplexity), true
+
+	case "Plan.seats":
+		if e.complexity.Plan.Seats == nil {
+			break
+		}
+
+		return e.complexity.Plan.Seats(childComplexity), true
+
+	case "Plan.space":
+		if e.complexity.Plan.Space == nil {
+			break
+		}
+
+		return e.complexity.Plan.Space(childComplexity), true
 
 	case "Query.organization":
 		if e.complexity.Query.Organization == nil {
@@ -307,6 +370,16 @@ var sources = []*ast.Source{
 	{Name: "../../schema.gql", Input: `type Organization {
   login: String!
   billing: OrganizationBilling!
+  plan: Plan
+}
+
+type Plan {
+  name: String
+  space: Int
+  collaborators: Int
+  privateRepos: Int
+  filledSeats: Int
+  seats: Int
 }
 
 type OrganizationBilling {
@@ -1004,6 +1077,61 @@ func (ec *executionContext) fieldContext_Organization_billing(ctx context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _Organization_plan(ctx context.Context, field graphql.CollectedField, obj *dto.Organization) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Organization_plan(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Organization().Plan(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*dto.Plan)
+	fc.Result = res
+	return ec.marshalOPlan2ᚖgithubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐPlan(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Organization_plan(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Organization",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "name":
+				return ec.fieldContext_Plan_name(ctx, field)
+			case "space":
+				return ec.fieldContext_Plan_space(ctx, field)
+			case "collaborators":
+				return ec.fieldContext_Plan_collaborators(ctx, field)
+			case "privateRepos":
+				return ec.fieldContext_Plan_privateRepos(ctx, field)
+			case "filledSeats":
+				return ec.fieldContext_Plan_filledSeats(ctx, field)
+			case "seats":
+				return ec.fieldContext_Plan_seats(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Plan", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _OrganizationBilling_actions(ctx context.Context, field graphql.CollectedField, obj *dto.OrganizationBilling) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_OrganizationBilling_actions(ctx, field)
 	if err != nil {
@@ -1110,6 +1238,252 @@ func (ec *executionContext) fieldContext_OrganizationBilling_storage(ctx context
 	return fc, nil
 }
 
+func (ec *executionContext) _Plan_name(ctx context.Context, field graphql.CollectedField, obj *dto.Plan) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Plan_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Plan_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Plan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Plan_space(ctx context.Context, field graphql.CollectedField, obj *dto.Plan) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Plan_space(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Space, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Plan_space(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Plan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Plan_collaborators(ctx context.Context, field graphql.CollectedField, obj *dto.Plan) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Plan_collaborators(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Collaborators, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Plan_collaborators(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Plan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Plan_privateRepos(ctx context.Context, field graphql.CollectedField, obj *dto.Plan) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Plan_privateRepos(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PrivateRepos, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Plan_privateRepos(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Plan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Plan_filledSeats(ctx context.Context, field graphql.CollectedField, obj *dto.Plan) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Plan_filledSeats(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FilledSeats, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Plan_filledSeats(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Plan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Plan_seats(ctx context.Context, field graphql.CollectedField, obj *dto.Plan) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Plan_seats(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Seats, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Plan_seats(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Plan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_organization(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_organization(ctx, field)
 	if err != nil {
@@ -1150,6 +1524,8 @@ func (ec *executionContext) fieldContext_Query_organization(ctx context.Context,
 				return ec.fieldContext_Organization_login(ctx, field)
 			case "billing":
 				return ec.fieldContext_Organization_billing(ctx, field)
+			case "plan":
+				return ec.fieldContext_Organization_plan(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Organization", field.Name)
 		},
@@ -3386,15 +3762,32 @@ func (ec *executionContext) _Organization(ctx context.Context, sel ast.Selection
 			out.Values[i] = ec._Organization_login(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "billing":
 
 			out.Values[i] = ec._Organization_billing(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
+		case "plan":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Organization_plan(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3456,6 +3849,51 @@ func (ec *executionContext) _OrganizationBilling(ctx context.Context, sel ast.Se
 				return innerFunc(ctx)
 
 			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var planImplementors = []string{"Plan"}
+
+func (ec *executionContext) _Plan(ctx context.Context, sel ast.SelectionSet, obj *dto.Plan) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, planImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Plan")
+		case "name":
+
+			out.Values[i] = ec._Plan_name(ctx, field, obj)
+
+		case "space":
+
+			out.Values[i] = ec._Plan_space(ctx, field, obj)
+
+		case "collaborators":
+
+			out.Values[i] = ec._Plan_collaborators(ctx, field, obj)
+
+		case "privateRepos":
+
+			out.Values[i] = ec._Plan_privateRepos(ctx, field, obj)
+
+		case "filledSeats":
+
+			out.Values[i] = ec._Plan_filledSeats(ctx, field, obj)
+
+		case "seats":
+
+			out.Values[i] = ec._Plan_seats(ctx, field, obj)
+
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4318,6 +4756,13 @@ func (ec *executionContext) marshalOOrganization2ᚖgithubᚗcomᚋaerealᚋgith
 		return graphql.Null
 	}
 	return ec._Organization(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOPlan2ᚖgithubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚋgraphᚋdtoᚐPlan(ctx context.Context, sel ast.SelectionSet, v *dto.Plan) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Plan(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
