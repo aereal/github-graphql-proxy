@@ -18,7 +18,7 @@ import (
 func NewHTTPHandler(maxConcurrency int) http.Handler {
 	cache := lru.New(100)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		httpClient := authz.ProxiedHTTPClient(r)
+		httpClient := authz.ProxiedHTTPClient(r.Context(), r.Header.Get("authorization"))
 		httpClient.Transport = &semaphoreTransport{
 			base: httpClient.Transport,
 			sem:  semaphore.NewWeighted(int64(maxConcurrency)),
