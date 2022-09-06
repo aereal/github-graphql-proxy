@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	github.com/99designs/gqlgen v0.17.16
+	github.com/google/go-cmp v0.5.8
 	github.com/google/go-github/v47 v47.0.0
 	github.com/vektah/gqlparser/v2 v2.5.0
 	golang.org/x/oauth2 v0.0.0-20220822191816-0ebed06d0094

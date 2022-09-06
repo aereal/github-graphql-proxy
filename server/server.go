@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -12,14 +13,33 @@ import (
 	"time"
 
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/aereal/github-graphql-proxy/authz"
 	"github.com/aereal/github-graphql-proxy/graph"
+	"github.com/google/go-github/v47/github"
+	"golang.org/x/sync/semaphore"
 )
 
 func Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	mux.Handle("/query", graph.NewHTTPHandler(runtime.GOMAXPROCS(0)))
+	mux.Handle("/query", withSemaphoreClient(int64(runtime.GOMAXPROCS(0))))
 	return mux
+}
+
+func withSemaphoreClient(maxConcurrency int64) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		httpClient := authz.ProxiedHTTPClient(r.Context(), r.Header.Get("authorization"))
+		rt := &semaphoreTransport{
+			base: httpClient.Transport,
+			sem:  semaphore.NewWeighted(maxConcurrency),
+		}
+		if rt.base == nil {
+			rt.base = http.DefaultTransport
+		}
+		httpClient.Transport = rt
+		h := graph.NewHTTPHandler(github.NewClient(httpClient))
+		h.ServeHTTP(w, r)
+	})
 }
 
 func Start(ctx context.Context, addr string, startTimeout time.Duration) error {
@@ -46,4 +66,20 @@ func graceful(ctx context.Context, srv *http.Server, timeout time.Duration) {
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Printf("failed to shutdown: %v", err)
 	}
+}
+
+type semaphoreTransport struct {
+	base http.RoundTripper
+	sem  *semaphore.Weighted
+}
+
+var _ http.RoundTripper = (*semaphoreTransport)(nil)
+
+func (t *semaphoreTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	ctx := r.Context()
+	if err := t.sem.Acquire(ctx, 1); err != nil {
+		return nil, fmt.Errorf("request cancelled: %w", err)
+	}
+	defer t.sem.Release(1)
+	return t.base.RoundTrip(r)
 }
