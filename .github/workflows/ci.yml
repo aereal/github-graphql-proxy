@@ -1,0 +1,45 @@
+---
+
+name: CI
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+jobs:
+  go-versions:
+    runs-on: ubuntu-latest
+    outputs:
+      versions: ${{ steps.versions.outputs.value }}
+    steps:
+      - id: versions
+        run: |
+          versions="$(curl -s 'https://go.dev/dl/?mode=json' | jq -c 'map(.version[2:])')"
+          echo "::set-output name=value::${versions}"
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3.0.2
+      - uses: reviewdog/action-golangci-lint@v2.1.7
+        with:
+          level: warning
+  test:
+    name: test os=${{ matrix.os }} go=${{ matrix.go_version }}
+    needs:
+      - go-versions
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macOS-latest
+          - windows-latest
+        go_version: ${{ fromJson(needs.go-versions.outputs.versions) }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3.0.2
+      - uses: actions/setup-go@v3.1.0
+        with:
+          go-version: ${{ matrix.go_version }}
+          cache: true
+      - name: test
+        run: go test -v -race -cover ./...
