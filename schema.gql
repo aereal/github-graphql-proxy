@@ -2,7 +2,7 @@ scalar Int64
 
 scalar Time
 
-type Organization {
+extend type Organization {
   login: String!
   billing: OrganizationBilling!
   plan: Plan
@@ -70,7 +70,7 @@ type RepositoryArtifactConnection {
   nodes: [Artifact]!
 }
 
-type Repository {
+extend type Repository {
   name: String!
   artifacts(first: Int, page: Int): RepositoryArtifactConnection!
 }

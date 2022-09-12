@@ -10,6 +10,10 @@ resolver:
   layout: follow-schema
   dir: graph/resolvers
   package: resolvers
+federation:
+  filename: graph/handler/federation.go
+  package: handler
+  version: 2
 autobind:
 #  - "github.com/aereal/github-graphql-proxy/graph/model"
 models:
