@@ -1,30 +1,30 @@
 schema:
   - schema.gql
 exec:
-  filename: graph/handler/handler_gen.go
-  package: handler
+  filename: exec_gen.go
+  package: githubgraphqlproxy
 model:
-  filename: graph/dto/dto_gen.go
-  package: dto
+  filename: dto_gen.go
+  package: githubgraphqlproxy
 resolver:
   layout: follow-schema
-  dir: graph/resolvers
+  dir: resolvers
   package: resolvers
 autobind:
 #  - "github.com/aereal/github-graphql-proxy/graph/model"
 models:
   Organization:
     model:
-      - github.com/aereal/github-graphql-proxy/graph/dto.Organization
+      - github.com/aereal/github-graphql-proxy.Organization
   OrganizationBilling:
     model:
-      - github.com/aereal/github-graphql-proxy/graph/dto.OrganizationBilling
+      - github.com/aereal/github-graphql-proxy.OrganizationBilling
   Repository:
     model:
-      - github.com/aereal/github-graphql-proxy/graph/dto.Repository
+      - github.com/aereal/github-graphql-proxy.Repository
   RepositoryArtifactConnection:
     model:
-      - github.com/aereal/github-graphql-proxy/graph/dto.RepositoryArtifactConnection
+      - github.com/aereal/github-graphql-proxy.RepositoryArtifactConnection
   ID:
     model:
       - github.com/99designs/gqlgen/graphql.ID

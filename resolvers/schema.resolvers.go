@@ -7,13 +7,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/aereal/github-graphql-proxy/graph/dto"
-	"github.com/aereal/github-graphql-proxy/graph/handler"
+	githubgraphqlproxy "github.com/aereal/github-graphql-proxy"
 	"github.com/google/go-github/v47/github"
 )
 
 // Plan is the resolver for the plan field.
-func (r *organizationResolver) Plan(ctx context.Context, obj *dto.Organization) (*dto.Plan, error) {
+func (r *organizationResolver) Plan(ctx context.Context, obj *githubgraphqlproxy.Organization) (*githubgraphqlproxy.Plan, error) {
 	org, _, err := r.githubClient.Organizations.Get(ctx, obj.Login)
 	if err != nil {
 		return nil, fmt.Errorf("Organizations.Get: %w", err)
@@ -21,7 +20,7 @@ func (r *organizationResolver) Plan(ctx context.Context, obj *dto.Organization) 
 	if org.Plan == nil {
 		return nil, ErrOrganizationPlanIsNil
 	}
-	return &dto.Plan{
+	return &githubgraphqlproxy.Plan{
 		Name:          org.Plan.Name,
 		Space:         org.Plan.Space,
 		Collaborators: org.Plan.Collaborators,
@@ -32,23 +31,23 @@ func (r *organizationResolver) Plan(ctx context.Context, obj *dto.Organization) 
 }
 
 // Actions is the resolver for the actions field.
-func (r *organizationBillingResolver) Actions(ctx context.Context, obj *dto.OrganizationBilling) (*dto.ActionBilling, error) {
+func (r *organizationBillingResolver) Actions(ctx context.Context, obj *githubgraphqlproxy.OrganizationBilling) (*githubgraphqlproxy.ActionBilling, error) {
 	billing, _, err := r.githubClient.Billing.GetActionsBillingOrg(ctx, obj.OrganizationLogin)
 	if err != nil {
 		return nil, fmt.Errorf("Billing.GetActionsBillingOrg: %w", err)
 	}
-	return &dto.ActionBilling{
+	return &githubgraphqlproxy.ActionBilling{
 		TotalMinutesUsed:     billing.TotalMinutesUsed,
 		TotalPaidMinutesUsed: billing.TotalPaidMinutesUsed,
 		IncludedMinutes:      billing.IncludedMinutes,
-		MinutedUsedBreakdown: &dto.ActionBillingBreakdown{
-			Ubuntu: &dto.ActionBillingBreakdownUbuntu{
+		MinutedUsedBreakdown: &githubgraphqlproxy.ActionBillingBreakdown{
+			Ubuntu: &githubgraphqlproxy.ActionBillingBreakdownUbuntu{
 				Total: &billing.MinutesUsedBreakdown.Ubuntu,
 			},
-			MacOs: &dto.ActionBillingBreakdownMacOs{
+			MacOs: &githubgraphqlproxy.ActionBillingBreakdownMacOs{
 				Total: &billing.MinutesUsedBreakdown.MacOS,
 			},
-			Windows: &dto.ActionBillingBreakdownWindows{
+			Windows: &githubgraphqlproxy.ActionBillingBreakdownWindows{
 				Total: &billing.MinutesUsedBreakdown.Windows,
 			},
 		},
@@ -56,12 +55,12 @@ func (r *organizationBillingResolver) Actions(ctx context.Context, obj *dto.Orga
 }
 
 // Storage is the resolver for the storage field.
-func (r *organizationBillingResolver) Storage(ctx context.Context, obj *dto.OrganizationBilling) (*dto.StorageBilling, error) {
+func (r *organizationBillingResolver) Storage(ctx context.Context, obj *githubgraphqlproxy.OrganizationBilling) (*githubgraphqlproxy.StorageBilling, error) {
 	billing, _, err := r.githubClient.Billing.GetStorageBillingOrg(ctx, obj.OrganizationLogin)
 	if err != nil {
 		return nil, fmt.Errorf("Billing.GetStorageBillingOrg: %w", err)
 	}
-	return &dto.StorageBilling{
+	return &githubgraphqlproxy.StorageBilling{
 		DaysLeftInBillingCycle:       billing.DaysLeftInBillingCycle,
 		EstimatedPaidStorageForMonth: billing.EstimatedPaidStorageForMonth,
 		EstimatedStorageForMonth:     billing.EstimatedStorageForMonth,
@@ -69,17 +68,17 @@ func (r *organizationBillingResolver) Storage(ctx context.Context, obj *dto.Orga
 }
 
 // Organization is the resolver for the organization field.
-func (r *queryResolver) Organization(ctx context.Context, login string) (*dto.Organization, error) {
-	return &dto.Organization{Login: login, Billing: &dto.OrganizationBilling{OrganizationLogin: login}}, nil
+func (r *queryResolver) Organization(ctx context.Context, login string) (*githubgraphqlproxy.Organization, error) {
+	return &githubgraphqlproxy.Organization{Login: login, Billing: &githubgraphqlproxy.OrganizationBilling{OrganizationLogin: login}}, nil
 }
 
 // Repository is the resolver for the repository field.
-func (r *queryResolver) Repository(ctx context.Context, owner string, name string) (*dto.Repository, error) {
-	return &dto.Repository{Owner: owner, Name: name}, nil
+func (r *queryResolver) Repository(ctx context.Context, owner string, name string) (*githubgraphqlproxy.Repository, error) {
+	return &githubgraphqlproxy.Repository{Owner: owner, Name: name}, nil
 }
 
 // Artifacts is the resolver for the artifacts field.
-func (r *repositoryResolver) Artifacts(ctx context.Context, obj *dto.Repository, first *int, page *int) (*dto.RepositoryArtifactConnection, error) {
+func (r *repositoryResolver) Artifacts(ctx context.Context, obj *githubgraphqlproxy.Repository, first *int, page *int) (*githubgraphqlproxy.RepositoryArtifactConnection, error) {
 	listOpts := &github.ListOptions{}
 	if first != nil {
 		listOpts.PerPage = *first
@@ -91,12 +90,12 @@ func (r *repositoryResolver) Artifacts(ctx context.Context, obj *dto.Repository,
 	if err != nil {
 		return nil, fmt.Errorf("Actions.ListArtifacts: %w", err)
 	}
-	out := &dto.RepositoryArtifactConnection{Nodes: make([]*dto.Artifact, len(artifacts.Artifacts))}
+	out := &githubgraphqlproxy.RepositoryArtifactConnection{Nodes: make([]*githubgraphqlproxy.Artifact, len(artifacts.Artifacts))}
 	out.TotalCount = len(artifacts.Artifacts)
 	for i, artifact := range artifacts.Artifacts {
 		size := artifact.GetSizeInBytes()
 		out.TotalSizeInBytes += size
-		a := &dto.Artifact{
+		a := &githubgraphqlproxy.Artifact{
 			ID:                 int(artifact.GetID()),
 			Name:               artifact.GetName(),
 			SizeInBytes:        int(size),
@@ -114,19 +113,21 @@ func (r *repositoryResolver) Artifacts(ctx context.Context, obj *dto.Repository,
 	return out, nil
 }
 
-// Organization returns handler.OrganizationResolver implementation.
-func (r *Resolver) Organization() handler.OrganizationResolver { return &organizationResolver{r} }
+// Organization returns githubgraphqlproxy.OrganizationResolver implementation.
+func (r *Resolver) Organization() githubgraphqlproxy.OrganizationResolver {
+	return &organizationResolver{r}
+}
 
-// OrganizationBilling returns handler.OrganizationBillingResolver implementation.
-func (r *Resolver) OrganizationBilling() handler.OrganizationBillingResolver {
+// OrganizationBilling returns githubgraphqlproxy.OrganizationBillingResolver implementation.
+func (r *Resolver) OrganizationBilling() githubgraphqlproxy.OrganizationBillingResolver {
 	return &organizationBillingResolver{r}
 }
 
-// Query returns handler.QueryResolver implementation.
-func (r *Resolver) Query() handler.QueryResolver { return &queryResolver{r} }
+// Query returns githubgraphqlproxy.QueryResolver implementation.
+func (r *Resolver) Query() githubgraphqlproxy.QueryResolver { return &queryResolver{r} }
 
-// Repository returns handler.RepositoryResolver implementation.
-func (r *Resolver) Repository() handler.RepositoryResolver { return &repositoryResolver{r} }
+// Repository returns githubgraphqlproxy.RepositoryResolver implementation.
+func (r *Resolver) Repository() githubgraphqlproxy.RepositoryResolver { return &repositoryResolver{r} }
 
 type organizationResolver struct{ *Resolver }
 type organizationBillingResolver struct{ *Resolver }

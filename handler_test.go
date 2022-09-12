@@ -1,4 +1,4 @@
-package graph_test
+package githubgraphqlproxy_test
 
 import (
 	"bytes"
@@ -11,8 +11,11 @@ import (
 	"testing"
 
 	"github.com/99designs/gqlgen/graphql"
-	"github.com/aereal/github-graphql-proxy/graph"
-	"github.com/aereal/github-graphql-proxy/graph/resolvers"
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/extension"
+	"github.com/99designs/gqlgen/graphql/handler/transport"
+	githubgraphqlproxy "github.com/aereal/github-graphql-proxy"
+	"github.com/aereal/github-graphql-proxy/resolvers"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-github/v47/github"
 	"github.com/vektah/gqlparser/v2/gqlerror"
@@ -216,7 +219,7 @@ var noMatchingDefinitionFoundHandler = http.HandlerFunc(func(w http.ResponseWrit
 })
 
 func sendGraphqlRequest(ctx context.Context, params *graphql.RawParams, githubClient *github.Client) (*http.Response, error, func()) {
-	handlerSrv := httptest.NewServer(graph.NewHTTPHandler(githubClient))
+	handlerSrv := httptest.NewServer(newHTTPHandler(githubClient))
 	close := func() { handlerSrv.Close() }
 	buf := new(bytes.Buffer)
 	if err := json.NewEncoder(buf).Encode(params); err != nil {
@@ -232,4 +235,14 @@ func sendGraphqlRequest(ctx context.Context, params *graphql.RawParams, githubCl
 		return nil, err, close
 	}
 	return resp, nil, close
+}
+
+func newHTTPHandler(githubClient *github.Client) http.Handler {
+	schema := githubgraphqlproxy.NewExecutableSchema(githubgraphqlproxy.Config{Resolvers: resolvers.New(githubClient)})
+	h := handler.New(schema)
+	h.AddTransport(transport.Options{ /* TODO: AllowedMethods */ })
+	h.AddTransport(transport.GET{})
+	h.AddTransport(transport.POST{})
+	h.Use(extension.Introspection{})
+	return h
 }

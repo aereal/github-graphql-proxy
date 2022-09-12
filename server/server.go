@@ -12,9 +12,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/extension"
+	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
+	githubgraphqlproxy "github.com/aereal/github-graphql-proxy"
 	"github.com/aereal/github-graphql-proxy/authz"
-	"github.com/aereal/github-graphql-proxy/graph"
+	"github.com/aereal/github-graphql-proxy/resolvers"
 	"github.com/google/go-github/v47/github"
 	"golang.org/x/sync/semaphore"
 )
@@ -37,7 +41,7 @@ func withSemaphoreClient(maxConcurrency int64) http.Handler {
 			rt.base = http.DefaultTransport
 		}
 		httpClient.Transport = rt
-		h := graph.NewHTTPHandler(github.NewClient(httpClient))
+		h := queryHandler(github.NewClient(httpClient))
 		h.ServeHTTP(w, r)
 	})
 }
@@ -82,4 +86,14 @@ func (t *semaphoreTransport) RoundTrip(r *http.Request) (*http.Response, error) 
 	}
 	defer t.sem.Release(1)
 	return t.base.RoundTrip(r)
+}
+
+func queryHandler(githubClient *github.Client) http.Handler {
+	schema := githubgraphqlproxy.NewExecutableSchema(githubgraphqlproxy.Config{Resolvers: resolvers.New(githubClient)})
+	h := handler.New(schema)
+	h.AddTransport(transport.Options{ /* TODO: AllowedMethods */ })
+	h.AddTransport(transport.GET{})
+	h.AddTransport(transport.POST{})
+	h.Use(extension.Introspection{})
+	return h
 }

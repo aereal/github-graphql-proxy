@@ -1,4 +1,4 @@
-package dto
+package githubgraphqlproxy
 
 type Organization struct {
 	Login   string `json:"login"`
