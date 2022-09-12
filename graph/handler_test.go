@@ -12,6 +12,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/aereal/github-graphql-proxy/graph"
+	"github.com/aereal/github-graphql-proxy/graph/resolvers"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-github/v47/github"
 	"github.com/vektah/gqlparser/v2/gqlerror"
@@ -109,7 +110,7 @@ func TestHandler(t *testing.T) {
 			nil,
 			func(t *testing.T, errs gqlerror.List) {
 				t.Helper()
-				if msg := errs.Error(); msg != "input: organization.plan organization.plan in the response from GitHub is nil\n" {
+				if msg := errs.Error(); msg != fmt.Sprintf("input: organization.plan %s\n", resolvers.ErrOrganizationPlanIsNil) {
 					t.Errorf("errors:\n%s", msg)
 				}
 			},

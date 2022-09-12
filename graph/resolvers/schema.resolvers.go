@@ -5,21 +5,21 @@ package resolvers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/aereal/github-graphql-proxy/graph/dto"
 	"github.com/aereal/github-graphql-proxy/graph/handler"
 	"github.com/google/go-github/v47/github"
-	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
 // Plan is the resolver for the plan field.
 func (r *organizationResolver) Plan(ctx context.Context, obj *dto.Organization) (*dto.Plan, error) {
 	org, _, err := r.githubClient.Organizations.Get(ctx, obj.Login)
 	if err != nil {
-		return nil, gqlerror.Errorf("Organizations.Get: %s", err)
+		return nil, fmt.Errorf("Organizations.Get: %w", err)
 	}
 	if org.Plan == nil {
-		return nil, gqlerror.Errorf("organization.plan in the response from GitHub is nil")
+		return nil, ErrOrganizationPlanIsNil
 	}
 	return &dto.Plan{
 		Name:          org.Plan.Name,
@@ -35,7 +35,7 @@ func (r *organizationResolver) Plan(ctx context.Context, obj *dto.Organization) 
 func (r *organizationBillingResolver) Actions(ctx context.Context, obj *dto.OrganizationBilling) (*dto.ActionBilling, error) {
 	billing, _, err := r.githubClient.Billing.GetActionsBillingOrg(ctx, obj.OrganizationLogin)
 	if err != nil {
-		return nil, gqlerror.Errorf("Billing.GetActionsBillingOrg: %s", err)
+		return nil, fmt.Errorf("Billing.GetActionsBillingOrg: %w", err)
 	}
 	return &dto.ActionBilling{
 		TotalMinutesUsed:     billing.TotalMinutesUsed,
@@ -59,7 +59,7 @@ func (r *organizationBillingResolver) Actions(ctx context.Context, obj *dto.Orga
 func (r *organizationBillingResolver) Storage(ctx context.Context, obj *dto.OrganizationBilling) (*dto.StorageBilling, error) {
 	billing, _, err := r.githubClient.Billing.GetStorageBillingOrg(ctx, obj.OrganizationLogin)
 	if err != nil {
-		return nil, gqlerror.Errorf("Billing.GetStorageBillingOrg: %s", err)
+		return nil, fmt.Errorf("Billing.GetStorageBillingOrg: %w", err)
 	}
 	return &dto.StorageBilling{
 		DaysLeftInBillingCycle:       billing.DaysLeftInBillingCycle,
@@ -89,7 +89,7 @@ func (r *repositoryResolver) Artifacts(ctx context.Context, obj *dto.Repository,
 	}
 	artifacts, _, err := r.githubClient.Actions.ListArtifacts(ctx, obj.Owner, obj.Name, listOpts)
 	if err != nil {
-		return nil, gqlerror.Errorf("Actions.ListArtifacts: %v", err)
+		return nil, fmt.Errorf("Actions.ListArtifacts: %w", err)
 	}
 	out := &dto.RepositoryArtifactConnection{Nodes: make([]*dto.Artifact, len(artifacts.Artifacts))}
 	out.TotalCount = len(artifacts.Artifacts)
