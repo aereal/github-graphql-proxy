@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/99designs/gqlgen/graphql"
@@ -64,6 +65,51 @@ func TestHandler(t *testing.T) {
 			func(t *testing.T, errs gqlerror.List) {
 				t.Helper()
 				if msg := errs.Error(); msg != "" {
+					t.Errorf("errors:\n%s", msg)
+				}
+			},
+		},
+		{
+			"error from GitHub API",
+			mockAPIResponseList{
+				{
+					urlPath: fmt.Sprintf("/api/v3/orgs/%s", org),
+					code:    http.StatusServiceUnavailable,
+					body:    map[string]any{"message": "oops"},
+				},
+			},
+			&graphql.RawParams{Query: query, Variables: map[string]any{"org": org}},
+			map[string]any{"organization": map[string]any{"plan": nil}},
+			nil,
+			func(t *testing.T, errs gqlerror.List) {
+				t.Helper()
+				msg := errs.Error()
+				var (
+					prefix = "input: organization.plan Organizations.Get: GET"
+					suffix = fmt.Sprintf("/api/v3/orgs/%s: 503 oops []\n", org)
+				)
+				if !(strings.HasPrefix(msg, prefix) && strings.HasSuffix(msg, suffix)) {
+					t.Errorf("error:\n%q", msg)
+				}
+			},
+		},
+		{
+			"successfully got the org but got nothing plan",
+			mockAPIResponseList{
+				{
+					urlPath: fmt.Sprintf("/api/v3/orgs/%s", org),
+					body:    &github.Organization{},
+				},
+			},
+			&graphql.RawParams{
+				Query:     query,
+				Variables: map[string]any{"org": org},
+			},
+			map[string]any{"organization": map[string]any{"plan": nil}},
+			nil,
+			func(t *testing.T, errs gqlerror.List) {
+				t.Helper()
+				if msg := errs.Error(); msg != "input: organization.plan organization.plan in the response from GitHub is nil\n" {
 					t.Errorf("errors:\n%s", msg)
 				}
 			},

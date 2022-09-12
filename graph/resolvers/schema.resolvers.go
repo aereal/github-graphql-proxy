@@ -19,7 +19,7 @@ func (r *organizationResolver) Plan(ctx context.Context, obj *dto.Organization) 
 		return nil, gqlerror.Errorf("Organizations.Get: %s", err)
 	}
 	if org.Plan == nil {
-		return nil, nil
+		return nil, gqlerror.Errorf("organization.plan in the response from GitHub is nil")
 	}
 	return &dto.Plan{
 		Name:          org.Plan.Name,
