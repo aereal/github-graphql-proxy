@@ -25,8 +25,8 @@ import (
 
 func Handler() http.Handler {
 	mux := http.NewServeMux()
-	mux.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	mux.Handle("/query", withSemaphoreClient(int64(runtime.GOMAXPROCS(0))))
+	mux.Handle("/", playground.Handler("GraphQL playground", "/extension/query"))
+	mux.Handle("/extension/query", withSemaphoreClient(int64(runtime.GOMAXPROCS(0))))
 	return mux
 }
 

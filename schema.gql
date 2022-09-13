@@ -3,7 +3,6 @@ scalar Int64
 scalar Time
 
 type Organization {
-  login: String!
   billing: OrganizationBilling!
   plan: Plan
 }
@@ -71,7 +70,6 @@ type RepositoryArtifactConnection {
 }
 
 type Repository {
-  name: String!
   artifacts(first: Int, page: Int): RepositoryArtifactConnection!
 }
 

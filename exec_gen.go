@@ -85,7 +85,6 @@ type ComplexityRoot struct {
 
 	Organization struct {
 		Billing func(childComplexity int) int
-		Login   func(childComplexity int) int
 		Plan    func(childComplexity int) int
 	}
 
@@ -110,7 +109,6 @@ type ComplexityRoot struct {
 
 	Repository struct {
 		Artifacts func(childComplexity int, first *int, page *int) int
-		Name      func(childComplexity int) int
 	}
 
 	RepositoryArtifactConnection struct {
@@ -289,13 +287,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Organization.Billing(childComplexity), true
 
-	case "Organization.login":
-		if e.complexity.Organization.Login == nil {
-			break
-		}
-
-		return e.complexity.Organization.Login(childComplexity), true
-
 	case "Organization.plan":
 		if e.complexity.Organization.Plan == nil {
 			break
@@ -394,13 +385,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Repository.Artifacts(childComplexity, args["first"].(*int), args["page"].(*int)), true
-
-	case "Repository.name":
-		if e.complexity.Repository.Name == nil {
-			break
-		}
-
-		return e.complexity.Repository.Name(childComplexity), true
 
 	case "RepositoryArtifactConnection.nodes":
 		if e.complexity.RepositoryArtifactConnection.Nodes == nil {
@@ -1424,50 +1408,6 @@ func (ec *executionContext) fieldContext_Artifact_expiresAt(ctx context.Context,
 	return fc, nil
 }
 
-func (ec *executionContext) _Organization_login(ctx context.Context, field graphql.CollectedField, obj *Organization) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Organization_login(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Login, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Organization_login(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Organization",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Organization_billing(ctx context.Context, field graphql.CollectedField, obj *Organization) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Organization_billing(ctx, field)
 	if err != nil {
@@ -1961,8 +1901,6 @@ func (ec *executionContext) fieldContext_Query_organization(ctx context.Context,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "login":
-				return ec.fieldContext_Organization_login(ctx, field)
 			case "billing":
 				return ec.fieldContext_Organization_billing(ctx, field)
 			case "plan":
@@ -2021,8 +1959,6 @@ func (ec *executionContext) fieldContext_Query_repository(ctx context.Context, f
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "name":
-				return ec.fieldContext_Repository_name(ctx, field)
 			case "artifacts":
 				return ec.fieldContext_Repository_artifacts(ctx, field)
 			}
@@ -2167,50 +2103,6 @@ func (ec *executionContext) fieldContext_Query___schema(ctx context.Context, fie
 				return ec.fieldContext___Schema_directives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Schema", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Repository_name(ctx context.Context, field graphql.CollectedField, obj *Repository) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Repository_name(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Name, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Repository_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Repository",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -4581,13 +4473,6 @@ func (ec *executionContext) _Organization(ctx context.Context, sel ast.Selection
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Organization")
-		case "login":
-
-			out.Values[i] = ec._Organization_login(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
 		case "billing":
 
 			out.Values[i] = ec._Organization_billing(ctx, field, obj)
@@ -4821,13 +4706,6 @@ func (ec *executionContext) _Repository(ctx context.Context, sel ast.SelectionSe
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Repository")
-		case "name":
-
-			out.Values[i] = ec._Repository_name(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
 		case "artifacts":
 			field := field
 
