@@ -1,8 +1,12 @@
+extend schema
+  @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@shareable", "@external"])
+
 scalar Int64
 
 scalar Time
 
-type Organization {
+extend type Organization @key(fields: "login") {
+  login: String! @external
   billing: OrganizationBilling!
   plan: Plan
 }
@@ -69,11 +73,12 @@ type RepositoryArtifactConnection {
   nodes: [Artifact]!
 }
 
-type Repository {
+extend type Repository @key(fields: "nameWithOwner") {
+  nameWithOwner: String! @external
   artifacts(first: Int, page: Int): RepositoryArtifactConnection!
 }
 
 type Query {
-  organization(login: String!): Organization
-  repository(owner: String!, name: String!): Repository
+  organization(login: String!): Organization @shareable
+  repository(owner: String!, name: String!): Repository @shareable
 }
