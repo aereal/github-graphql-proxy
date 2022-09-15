@@ -1,0 +1,12 @@
+---
+
+federation_version: 2
+subgraphs:
+  upstream:
+    routing_url: https://api.github.com/graphql
+    schema:
+      file: ./github.gql
+  extension:
+    routing_url: http://localhost:8080/extension/query
+    schema:
+      file: ./schema.gql
