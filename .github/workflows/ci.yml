@@ -43,3 +43,25 @@ jobs:
           cache: true
       - name: test
         run: go test -v -race -cover ./...
+  check-code-generation:
+    runs-on: ubuntu-latest
+    env:
+      APOLLO_ELV2_LICENSE: accept
+    steps:
+      - uses: actions/checkout@v3.0.2
+      - uses: aquaproj/aqua-installer@v1.1.1
+        with:
+          aqua_version: v1.19.2
+      - name: check tools version
+        run: |
+          rover --version
+          router --version
+      - name: update schema
+        run: |
+          make
+      - name: preview generated schema
+        run: |
+          echo "## Supergraph" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat supergraph.gql >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY

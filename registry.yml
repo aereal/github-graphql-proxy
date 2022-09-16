@@ -1,0 +1,39 @@
+---
+
+# yaml-language-server: $schema=https://raw.githubusercontent.com/aquaproj/aqua/main/json-schema/registry.json
+
+packages:
+  - type: github_release
+    repo_owner: apollographql
+    repo_name: router
+    asset: router-{{.Version}}-{{.Arch}}-{{.OS}}.tar.gz
+    description: A configurable, high-performance routing runtime for Apollo Federation 🚀
+    replacements:
+      amd64: x86_64
+      darwin: apple-darwin
+      linux: unknown-linux-gnu
+      windows: pc-windows-msvc
+    supported_envs:
+      - darwin
+      - amd64
+    rosetta2: true
+    files:
+      - name: router
+        src: dist/router
+  - type: github_release
+    repo_owner: apollographql
+    repo_name: rover
+    asset: rover-{{.Version}}-{{.Arch}}-{{.OS}}.tar.gz
+    description: ✨🤖 🐶 The CLI for Apollo Studio
+    replacements:
+      amd64: x86_64
+      darwin: apple-darwin
+      linux: unknown-linux-gnu
+      windows: pc-windows-msvc
+    supported_envs:
+      - darwin
+      - amd64
+    rosetta2: true
+    files:
+      - name: rover
+        src: dist/rover

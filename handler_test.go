@@ -24,7 +24,7 @@ import (
 var (
 	query = `
 		query myQuery($org: String!) {
-			test__organization(login: $org) {
+			organization(login: $org) {
 				plan {
 					name
 					seats
@@ -64,7 +64,7 @@ func TestHandler(t *testing.T) {
 				Query:     query,
 				Variables: map[string]any{"org": org},
 			},
-			map[string]any{"test__organization": map[string]any{"plan": map[string]any{"filledSeats": float64(3), "seats": float64(5), "name": "enterprise"}}},
+			map[string]any{"organization": map[string]any{"plan": map[string]any{"filledSeats": float64(3), "seats": float64(5), "name": "enterprise"}}},
 			nil,
 			func(t *testing.T, errs gqlerror.List) {
 				t.Helper()
@@ -83,13 +83,13 @@ func TestHandler(t *testing.T) {
 				},
 			},
 			&graphql.RawParams{Query: query, Variables: map[string]any{"org": org}},
-			map[string]any{"test__organization": map[string]any{"plan": nil}},
+			map[string]any{"organization": map[string]any{"plan": nil}},
 			nil,
 			func(t *testing.T, errs gqlerror.List) {
 				t.Helper()
 				msg := errs.Error()
 				var (
-					prefix = "input: test__organization.plan Organizations.Get: GET"
+					prefix = "input: organization.plan Organizations.Get: GET"
 					suffix = fmt.Sprintf("/api/v3/orgs/%s: 503 oops []\n", org)
 				)
 				if !(strings.HasPrefix(msg, prefix) && strings.HasSuffix(msg, suffix)) {
@@ -109,11 +109,11 @@ func TestHandler(t *testing.T) {
 				Query:     query,
 				Variables: map[string]any{"org": org},
 			},
-			map[string]any{"test__organization": map[string]any{"plan": nil}},
+			map[string]any{"organization": map[string]any{"plan": nil}},
 			nil,
 			func(t *testing.T, errs gqlerror.List) {
 				t.Helper()
-				if msg := errs.Error(); msg != fmt.Sprintf("input: test__organization.plan %s\n", resolvers.ErrOrganizationPlanIsNil) {
+				if msg := errs.Error(); msg != fmt.Sprintf("input: organization.plan %s\n", resolvers.ErrOrganizationPlanIsNil) {
 					t.Errorf("errors:\n%s", msg)
 				}
 			},
@@ -133,7 +133,7 @@ func TestHandler(t *testing.T) {
 			}
 			defer resp.Body.Close()
 			if resp.StatusCode != http.StatusOK {
-				t.Errorf("response status code: %d", resp.StatusCode)
+				t.Fatalf("response status code: %d", resp.StatusCode)
 			}
 			var gqlResp graphql.Response
 			if err := json.NewDecoder(resp.Body).Decode(&gqlResp); err != nil {
