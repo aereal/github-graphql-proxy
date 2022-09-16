@@ -23,6 +23,58 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
+var (
+	defaultPort    = "8080"
+	defaultTimeout = time.Second * 5
+)
+
+func WithPort(port string) Option {
+	return func(s *Server) {
+		if port != "" {
+			s.port = port
+		}
+	}
+}
+
+func WithStartTimeoutLiteral(lit string) Option {
+	return func(s *Server) {
+		dur, err := time.ParseDuration(lit)
+		if err == nil {
+			s.startTimeout = dur
+		}
+	}
+}
+
+type Option func(*Server)
+
+func New(opts ...Option) *Server {
+	srv := &Server{port: defaultPort, startTimeout: defaultTimeout}
+	for _, o := range opts {
+		o(srv)
+	}
+	return srv
+}
+
+type Server struct {
+	port         string
+	startTimeout time.Duration
+}
+
+func (s *Server) Start(ctx context.Context) error {
+	addr := ":" + s.port
+	srv := &http.Server{
+		Handler: Handler(),
+		Addr:    addr,
+	}
+	go graceful(ctx, srv, s.startTimeout)
+	log.Printf("starting server (addr=%s) ...", addr)
+	err := srv.ListenAndServe()
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+	return nil
+}
+
 func Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("/", playground.Handler("GraphQL playground", "/extension/query"))
@@ -44,20 +96,6 @@ func withSemaphoreClient(maxConcurrency int64) http.Handler {
 		h := queryHandler(github.NewClient(httpClient))
 		h.ServeHTTP(w, r)
 	})
-}
-
-func Start(ctx context.Context, addr string, startTimeout time.Duration) error {
-	srv := &http.Server{
-		Handler: Handler(),
-		Addr:    addr,
-	}
-	go graceful(ctx, srv, startTimeout)
-	log.Printf("starting server (addr=%s) ...", addr)
-	err := srv.ListenAndServe()
-	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		return err
-	}
-	return nil
 }
 
 func graceful(ctx context.Context, srv *http.Server, timeout time.Duration) {
