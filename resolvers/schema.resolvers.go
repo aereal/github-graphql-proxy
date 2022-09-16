@@ -73,7 +73,7 @@ func (r *queryResolver) Organization(ctx context.Context, login string) (*github
 }
 
 // Repository is the resolver for the repository field.
-func (r *queryResolver) Repository(ctx context.Context, owner string, name string) (*githubgraphqlproxy.Repository, error) {
+func (r *queryResolver) Repository(ctx context.Context, owner string, name string, followRenames *bool) (*githubgraphqlproxy.Repository, error) {
 	return &githubgraphqlproxy.Repository{Owner: owner, Name: name}, nil
 }
 

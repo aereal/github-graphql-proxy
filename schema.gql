@@ -80,5 +80,5 @@ extend type Repository @key(fields: "nameWithOwner") {
 
 type Query {
   organization(login: String!): Organization @shareable
-  repository(owner: String!, name: String!): Repository @shareable
+  repository(owner: String!, name: String!, followRenames: Boolean = true): Repository @shareable
 }

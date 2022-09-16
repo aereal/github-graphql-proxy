@@ -112,7 +112,7 @@ type ComplexityRoot struct {
 
 	Query struct {
 		Organization       func(childComplexity int, login string) int
-		Repository         func(childComplexity int, owner string, name string) int
+		Repository         func(childComplexity int, owner string, name string, followRenames *bool) int
 		__resolve__service func(childComplexity int) int
 		__resolve_entities func(childComplexity int, representations []map[string]interface{}) int
 	}
@@ -152,7 +152,7 @@ type OrganizationBillingResolver interface {
 }
 type QueryResolver interface {
 	Organization(ctx context.Context, login string) (*Organization, error)
-	Repository(ctx context.Context, owner string, name string) (*Repository, error)
+	Repository(ctx context.Context, owner string, name string, followRenames *bool) (*Repository, error)
 }
 type RepositoryResolver interface {
 	Artifacts(ctx context.Context, obj *Repository, first *int, page *int) (*RepositoryArtifactConnection, error)
@@ -422,7 +422,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Repository(childComplexity, args["owner"].(string), args["name"].(string)), true
+		return e.complexity.Query.Repository(childComplexity, args["owner"].(string), args["name"].(string), args["followRenames"].(*bool)), true
 
 	case "Query._service":
 		if e.complexity.Query.__resolve__service == nil {
@@ -714,6 +714,15 @@ func (ec *executionContext) field_Query_repository_args(ctx context.Context, raw
 		}
 	}
 	args["name"] = arg1
+	var arg2 *bool
+	if tmp, ok := rawArgs["followRenames"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("followRenames"))
+		arg2, err = ec.unmarshalOBoolean2ᚖbool(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["followRenames"] = arg2
 	return args, nil
 }
 
@@ -2271,7 +2280,7 @@ func (ec *executionContext) _Query_repository(ctx context.Context, field graphql
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Repository(rctx, fc.Args["owner"].(string), fc.Args["name"].(string))
+		return ec.resolvers.Query().Repository(rctx, fc.Args["owner"].(string), fc.Args["name"].(string), fc.Args["followRenames"].(*bool))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
