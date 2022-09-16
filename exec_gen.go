@@ -111,8 +111,8 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		TestOrganization   func(childComplexity int, login string) int
-		TestRepository     func(childComplexity int, owner string, name string) int
+		Organization       func(childComplexity int, login string) int
+		Repository         func(childComplexity int, owner string, name string) int
 		__resolve__service func(childComplexity int) int
 		__resolve_entities func(childComplexity int, representations []map[string]interface{}) int
 	}
@@ -151,8 +151,8 @@ type OrganizationBillingResolver interface {
 	Storage(ctx context.Context, obj *OrganizationBilling) (*StorageBilling, error)
 }
 type QueryResolver interface {
-	TestOrganization(ctx context.Context, login string) (*Organization, error)
-	TestRepository(ctx context.Context, owner string, name string) (*Repository, error)
+	Organization(ctx context.Context, login string) (*Organization, error)
+	Repository(ctx context.Context, owner string, name string) (*Repository, error)
 }
 type RepositoryResolver interface {
 	Artifacts(ctx context.Context, obj *Repository, first *int, page *int) (*RepositoryArtifactConnection, error)
@@ -400,29 +400,29 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Plan.Space(childComplexity), true
 
-	case "Query.test__organization":
-		if e.complexity.Query.TestOrganization == nil {
+	case "Query.organization":
+		if e.complexity.Query.Organization == nil {
 			break
 		}
 
-		args, err := ec.field_Query_test__organization_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_organization_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Query.TestOrganization(childComplexity, args["login"].(string)), true
+		return e.complexity.Query.Organization(childComplexity, args["login"].(string)), true
 
-	case "Query.test__repository":
-		if e.complexity.Query.TestRepository == nil {
+	case "Query.repository":
+		if e.complexity.Query.Repository == nil {
 			break
 		}
 
-		args, err := ec.field_Query_test__repository_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_repository_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Query.TestRepository(childComplexity, args["owner"].(string), args["name"].(string)), true
+		return e.complexity.Query.Repository(childComplexity, args["owner"].(string), args["name"].(string)), true
 
 	case "Query._service":
 		if e.complexity.Query.__resolve__service == nil {
@@ -678,7 +678,7 @@ func (ec *executionContext) field_Query__entities_args(ctx context.Context, rawA
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_test__organization_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query_organization_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
@@ -693,7 +693,7 @@ func (ec *executionContext) field_Query_test__organization_args(ctx context.Cont
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_test__repository_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query_repository_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
@@ -2197,8 +2197,8 @@ func (ec *executionContext) fieldContext_Plan_seats(ctx context.Context, field g
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_test__organization(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_test__organization(ctx, field)
+func (ec *executionContext) _Query_organization(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_organization(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -2211,7 +2211,7 @@ func (ec *executionContext) _Query_test__organization(ctx context.Context, field
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().TestOrganization(rctx, fc.Args["login"].(string))
+		return ec.resolvers.Query().Organization(rctx, fc.Args["login"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2225,7 +2225,7 @@ func (ec *executionContext) _Query_test__organization(ctx context.Context, field
 	return ec.marshalOOrganization2ᚖgithubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚐOrganization(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_test__organization(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_organization(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -2250,15 +2250,15 @@ func (ec *executionContext) fieldContext_Query_test__organization(ctx context.Co
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_test__organization_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Query_organization_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_test__repository(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_test__repository(ctx, field)
+func (ec *executionContext) _Query_repository(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_repository(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -2271,7 +2271,7 @@ func (ec *executionContext) _Query_test__repository(ctx context.Context, field g
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().TestRepository(rctx, fc.Args["owner"].(string), fc.Args["name"].(string))
+		return ec.resolvers.Query().Repository(rctx, fc.Args["owner"].(string), fc.Args["name"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2285,7 +2285,7 @@ func (ec *executionContext) _Query_test__repository(ctx context.Context, field g
 	return ec.marshalORepository2ᚖgithubᚗcomᚋaerealᚋgithubᚑgraphqlᚑproxyᚐRepository(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_test__repository(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_repository(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -2308,7 +2308,7 @@ func (ec *executionContext) fieldContext_Query_test__repository(ctx context.Cont
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_test__repository_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Query_repository_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -5263,7 +5263,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
-		case "test__organization":
+		case "organization":
 			field := field
 
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
@@ -5272,7 +5272,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_test__organization(ctx, field)
+				res = ec._Query_organization(ctx, field)
 				return res
 			}
 
@@ -5283,7 +5283,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Concurrently(i, func() graphql.Marshaler {
 				return rrm(innerCtx)
 			})
-		case "test__repository":
+		case "repository":
 			field := field
 
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
@@ -5292,7 +5292,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_test__repository(ctx, field)
+				res = ec._Query_repository(ctx, field)
 				return res
 			}
 

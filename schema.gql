@@ -79,6 +79,6 @@ extend type Repository @key(fields: "nameWithOwner") {
 }
 
 type Query {
-  test__organization(login: String!): Organization
-  test__repository(owner: String!, name: String!): Repository
+  organization(login: String!): Organization @shareable
+  repository(owner: String!, name: String!): Repository @shareable
 }

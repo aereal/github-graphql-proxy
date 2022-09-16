@@ -67,13 +67,13 @@ func (r *organizationBillingResolver) Storage(ctx context.Context, obj *githubgr
 	}, nil
 }
 
-// TestOrganization is the resolver for the test__organization field.
-func (r *queryResolver) TestOrganization(ctx context.Context, login string) (*githubgraphqlproxy.Organization, error) {
+// Organization is the resolver for the organization field.
+func (r *queryResolver) Organization(ctx context.Context, login string) (*githubgraphqlproxy.Organization, error) {
 	return &githubgraphqlproxy.Organization{Login: login, Billing: &githubgraphqlproxy.OrganizationBilling{OrganizationLogin: login}}, nil
 }
 
-// TestRepository is the resolver for the test__repository field.
-func (r *queryResolver) TestRepository(ctx context.Context, owner string, name string) (*githubgraphqlproxy.Repository, error) {
+// Repository is the resolver for the repository field.
+func (r *queryResolver) Repository(ctx context.Context, owner string, name string) (*githubgraphqlproxy.Repository, error) {
 	return &githubgraphqlproxy.Repository{Owner: owner, Name: name}, nil
 }
 
