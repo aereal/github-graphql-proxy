@@ -28,7 +28,7 @@ packages:
     replacements:
       amd64: x86_64
       darwin: apple-darwin
-      linux: unknown-linux-musl
+      linux: unknown-linux-gnu
       windows: pc-windows-msvc
     supported_envs:
       - darwin
